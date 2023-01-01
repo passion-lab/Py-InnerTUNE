@@ -4,7 +4,12 @@ from tkinter import (
     PhotoImage, Scrollbar
 )
 from tkinter.ttk import Sizegrip
-# from PIL import Image, ImageTk
+from os import listdir, curdir, chdir
+from os.path import isfile, isdir
+from PIL import Image, ImageTk
+from io import BytesIO
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3
 
 # Custom imports
 from AppDefaults import ColorDefaults, FontDefaults
@@ -29,7 +34,8 @@ class App:
         # self.make_window_draggable()
         self.make_main_menu()
         self.menu_dropdown_window: Toplevel
-        self.make_entry_box()
+        self.entry_box = self.make_entry_box()
+        self.make_song_list()
 
         self.bindings()
 
@@ -146,11 +152,24 @@ class App:
         bg_canvas.configure(yscrollcommand=vsb.set)
         bg_canvas.bind_all('<MouseWheel>', lambda e: bg_canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
 
-        for i in range(51):
-            Label(entry_box, text=f"This is a line with number: {i}", font=("Arial", 22)).pack()
-
         bg_frame.pack(side='top', fill='both', expand=True)
         bg_canvas.pack(side='left', fill='both', expand=True)
         vsb.pack(side='right', fill='y')
+
+        return entry_box
+
+    def make_song_list(self):
+        test_path = "C:/Users/SSW-10/Downloads/"
+        chdir(test_path)
+        for file in listdir(test_path):
+            if isfile(test_path + file) and (file.endswith(".mp3") or file.endswith(".wav")):
+                try:
+                    track = MP3(file)
+                    tag = ID3(file)
+                    art = tag.get("APIC:").data
+                    im = Image.open(BytesIO(art))
+                    print(im.size)
+                except:
+                    continue
 
 
