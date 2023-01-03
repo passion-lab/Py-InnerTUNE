@@ -1,3 +1,4 @@
+import tkinter
 from tkinter import (
     Tk, Toplevel,
     Frame, Canvas, Label, Button,
@@ -114,19 +115,21 @@ class App:
                                                      highlightcolor=self.color.ascent,
                                                      highlightbackground=self.color.ascent)
                 options = [
-                    ("Open & play a file", ),
-                    ("Open & play a folder", ),
-                    ("Scan whole filesystem", ),
-                    ("App Settings", ),
-                    (f"About {self.app_name}", ),
-                    (f"Close {self.app_name}", )
+                    ("Open & play a file",),
+                    ("Open & play a folder",),
+                    ("Scan whole filesystem",),
+                    ("App Settings",),
+                    (f"About {self.app_name}",),
+                    (f"Close {self.app_name}",)
                 ]
                 for i, option in enumerate(options):
                     cmd = Label(self.menu_dropdown_window, text=option[0], font=self.font.menu, bg=self.color.head_back,
                                 fg=self.color.main_fore, anchor='e', padx=10, pady=3)
                     cmd.pack(fill='x', anchor='e')
-                    cmd.bind('<Enter>', lambda e=None, c=cmd: c.configure(bg=self.color.main_back, fg=self.color.ascent))
-                    cmd.bind('<Leave>', lambda e=None, c=cmd: c.configure(bg=self.color.head_back, fg=self.color.main_fore))
+                    cmd.bind('<Enter>',
+                             lambda e=None, c=cmd: c.configure(bg=self.color.main_back, fg=self.color.ascent))
+                    cmd.bind('<Leave>',
+                             lambda e=None, c=cmd: c.configure(bg=self.color.head_back, fg=self.color.main_fore))
                     # cmd.bind('<Button-1>', lambda e=None, f=option[1]['func']: f())
                 # Window options
                 self.menu_dropdown_window.overrideredirect(True)
@@ -150,7 +153,7 @@ class App:
         entry_box.bind('<Configure>', lambda e: bg_canvas.configure(scrollregion=bg_canvas.bbox('all')))
         bg_canvas.create_window((0, 0), window=entry_box, anchor='nw')
         bg_canvas.configure(yscrollcommand=vsb.set)
-        bg_canvas.bind_all('<MouseWheel>', lambda e: bg_canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
+        bg_canvas.bind_all('<MouseWheel>', lambda e: bg_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
 
         bg_frame.pack(side='top', fill='both', expand=True)
         bg_canvas.pack(side='left', fill='both', expand=True)
@@ -163,13 +166,65 @@ class App:
         chdir(test_path)
         for file in listdir(test_path):
             if isfile(test_path + file) and (file.endswith(".mp3") or file.endswith(".wav")):
+                title = duration = artists = album = year = ""
+                # track = MP3(file)
                 try:
-                    track = MP3(file)
                     tag = ID3(file)
-                    art = tag.get("APIC:").data
-                    im = Image.open(BytesIO(art))
-                    print(im.size)
-                except:
-                    continue
 
+                    cover = Image.open(BytesIO(tag.get("APIC:").data))
+                    album = tag.get('TALB')
+                    artists = tag.get('TPE1')
+                    title = tag.get('TIT2')
+                    year = tag.get('TDRC')
+                    """
+                    print(tag['TALB'])
+                    print(tag['TPE1'])
+                    print(tag['TPE2'])
+                    print(tag['TCOM'])
+                    print(tag['TCOP'])
+                    print(tag['TSSE'])
+                    print(tag['TCON'])
+                    print(tag['TPUB'])
+                    print(tag['TXXX:compatible_brands'])
+                    print(tag['TXXX:major_brand'])
+                    print(tag['TXXX:minor_version'])
+                    print(tag['TIT2'])
+                    print(tag['TDRC'])
+                    """
+                except:
+                    title = file.rstrip(".mp3").rstrip(".wav")
+                    artists = album = year = "unknown"
+                finally:
+                    frame = Frame(self.entry_box, bg=self.color.entry_back, pady=5, padx=10)
+                    frame.pack(fill='x', padx=30, pady=5)
+                    #  +------+--------------------------------------+-----------------+
+                    #         +--------------------------------------+
+                    #  +------+--------------------------------------+-----------------+
+                    Label(frame, text="...", bg=self.color.entry_back, anchor='w').grid(row=0, column=0, rowspan=2)
+
+                    Label(frame, text=title, bg=self.color.entry_back, anchor='w', font=self.font.heading).grid(row=0, column=1, columnspan=6, sticky='w')
+
+                    if not artists == album == year == 'unknown':
+                        Label(frame, text="ARTIST(S):", bg=self.color.entry_back, font=self.font.key, anchor='w').grid(row=1, column=1, sticky='w')
+                        Label(frame, text=artists, bg=self.color.entry_back, font=self.font.value, anchor='w').grid(row=1, column=2, sticky='w')
+                        Label(frame, text="ALBUM:", bg=self.color.entry_back, font=self.font.key, anchor='w').grid(row=1, column=3, sticky='w')
+                        Label(frame, text=album, bg=self.color.entry_back, font=self.font.value, anchor='w').grid(row=1, column=4, sticky='w')
+                        Label(frame, text="RELEASED IN:", bg=self.color.entry_back, font=self.font.key, anchor='w').grid(row=1, column=5, sticky='w')
+                        Label(frame, text=year, bg=self.color.entry_back, font=self.font.value, anchor='w').grid(row=1, column=6, sticky='w')
+
+                    Label(frame, text="...", bg=self.color.entry_back, anchor='e').grid(row=0, column=7, rowspan=2, sticky='e')
+
+                    # bindings
+                    frame.bind('<Enter>', lambda e=None, f=frame: self._entry_hover(f, hover=True))
+                    frame.bind('<Leave>', lambda e=None, f=frame: self._entry_hover(f, hover=False))
+
+    def _entry_hover(self, frame: Frame, hover: bool = True):
+        if hover:
+            frame.configure(bg=self.color.entry_back_hover)
+            for f1 in frame.winfo_children():
+                f1.configure(bg=self.color.entry_back_hover)
+        else:
+            frame.configure(bg=self.color.entry_back)
+            for f1 in frame.winfo_children():
+                f1.configure(bg=self.color.entry_back)
 
