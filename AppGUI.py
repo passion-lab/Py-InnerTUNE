@@ -52,6 +52,7 @@ class App:
         image_dir = "./Assets/images/"
         self.images["menu_button_inactive"] = PhotoImage(file=image_dir + 'menu_button_inactive.png')
         self.images["menu_button_active"] = PhotoImage(file=image_dir + 'menu_button_active.png')
+        self.images["thumb"] = PhotoImage(file=image_dir + 'thumb.png')
 
     def bindings(self):
         self.header_bg.bind('<Button-1>', self._save_last_click)
@@ -165,42 +166,38 @@ class App:
         test_path = "C:/Users/SSW-10/Downloads/"
         chdir(test_path)
         for file in listdir(test_path):
-            if isfile(test_path + file) and (file.endswith(".mp3") or file.endswith(".wav")):
-                title = duration = artists = album = year = ""
+            if isfile(file) and (file.endswith(".mp3") or file.endswith(".wav")):
+                title = file.rstrip(".mp3").rstrip(".wav")
+                duration = artists = album = year = "unknown"
+                cover = self.images['thumb']
                 # track = MP3(file)
                 try:
                     tag = ID3(file)
 
-                    cover = Image.open(BytesIO(tag.get("APIC:").data))
-                    album = tag.get('TALB')
-                    artists = tag.get('TPE1')
-                    title = tag.get('TIT2')
-                    year = tag.get('TDRC')
-                    """
-                    print(tag['TALB'])
-                    print(tag['TPE1'])
-                    print(tag['TPE2'])
-                    print(tag['TCOM'])
-                    print(tag['TCOP'])
-                    print(tag['TSSE'])
-                    print(tag['TCON'])
-                    print(tag['TPUB'])
-                    print(tag['TXXX:compatible_brands'])
-                    print(tag['TXXX:major_brand'])
-                    print(tag['TXXX:minor_version'])
-                    print(tag['TIT2'])
-                    print(tag['TDRC'])
-                    """
+                    co = Image.open(BytesIO(tag.get("APIC:").data))
+                    if co:
+                        cover = co
+                    ti, ar, al, ye = tag.get('TIT2'), tag.get('TPE1'), tag.get('TALB'), tag.get('TDRC')
+                    if al:
+                        album = al
+                    if ar:
+                        artists = ar
+                    if ti:
+                        title = ti
+                    if ye:
+                        year = ye
                 except:
-                    title = file.rstrip(".mp3").rstrip(".wav")
-                    artists = album = year = "unknown"
+                    # title = file.rstrip(".mp3").rstrip(".wav")
+                    # duration = artists = album = year = "unknown"
+                    pass
                 finally:
                     frame = Frame(self.entry_box, bg=self.color.entry_back, pady=5, padx=10)
                     frame.pack(fill='x', padx=30, pady=5)
-                    #  +------+--------------------------------------+-----------------+
-                    #         +--------------------------------------+
-                    #  +------+--------------------------------------+-----------------+
-                    Label(frame, text="...", bg=self.color.entry_back, anchor='w').grid(row=0, column=0, rowspan=2)
+                    #  +------+-------------------------------------+------+---+---+---+---+
+                    #         +-----+-----+-----+------+-----+------+
+                    #  +------+-----+-----+-----+------+-----+------+------+---+---+---+---+
+                    # """
+                    Label(frame, image=self.images['thumb'], text="", bg=self.color.entry_back, anchor='center').grid(row=0, column=0, rowspan=2, padx=(0, 5))
 
                     Label(frame, text=title, bg=self.color.entry_back, anchor='w', font=self.font.heading).grid(row=0, column=1, columnspan=6, sticky='w')
 
@@ -217,6 +214,7 @@ class App:
                     # bindings
                     frame.bind('<Enter>', lambda e=None, f=frame: self._entry_hover(f, hover=True))
                     frame.bind('<Leave>', lambda e=None, f=frame: self._entry_hover(f, hover=False))
+                    # """
 
     def _entry_hover(self, frame: Frame, hover: bool = True):
         if hover:
