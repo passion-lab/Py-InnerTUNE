@@ -6,7 +6,7 @@ class ColorDefaults:
 
     def __init__(self):
         self.theme: Literal["white", "light", "dark", "black"] = "white"
-        self.ascent = "#FF7983"
+        self.ascent = "#f26d7d"
 
         match self.theme:
             case "white":
