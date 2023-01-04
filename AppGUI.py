@@ -9,6 +9,7 @@ from os import listdir, curdir, chdir
 from os.path import isfile, isdir
 from PIL import Image, ImageTk
 from io import BytesIO
+from base64 import b64decode
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3
 
@@ -52,7 +53,9 @@ class App:
         image_dir = "./Assets/images/"
         self.images["menu_button_inactive"] = PhotoImage(file=image_dir + 'menu_button_inactive.png')
         self.images["menu_button_active"] = PhotoImage(file=image_dir + 'menu_button_active.png')
-        self.images["thumb"] = PhotoImage(file=image_dir + 'thumb.png')
+        # self.images["thumb"] = PhotoImage(file=image_dir + 'thumb.png')
+        self.images["thumb"] = ImageTk.PhotoImage(Image.open(image_dir + 'thumb.png'))
+        self.images["thumb_hover"] = ImageTk.PhotoImage(Image.open(image_dir + 'thumb_hover.png'))
 
     def bindings(self):
         self.header_bg.bind('<Button-1>', self._save_last_click)
@@ -163,32 +166,36 @@ class App:
         return entry_box
 
     def make_song_list(self):
+        commands = (
+            ["\ue1f8", ],
+            ["\ue19f", ],
+            ["\ue142", ],
+            ["\ue110", ],
+            ["\ue193", ],
+            ["\ue107", ]
+        )
         test_path = "C:/Users/SSW-10/Downloads/"
         chdir(test_path)
         for file in listdir(test_path):
             if isfile(file) and (file.endswith(".mp3") or file.endswith(".wav")):
-                title = file.rstrip(".mp3").rstrip(".wav")
+                title = file.rstrip(".mp3").rstrip(".wav")[:125] + " ..." if len(file) > 125 else file.rstrip(".mp3").rstrip(".wav")
                 duration = artists = album = year = "unknown"
                 cover = self.images['thumb']
                 # track = MP3(file)
                 try:
                     tag = ID3(file)
 
-                    co = Image.open(BytesIO(tag.get("APIC:").data))
-                    if co:
-                        cover = co
+                    co = ImageTk.PhotoImage(Image.open(BytesIO(tag.get("APIC:").data)).resize((32, 32), resample=0))
                     ti, ar, al, ye = tag.get('TIT2'), tag.get('TPE1'), tag.get('TALB'), tag.get('TDRC')
-                    if al:
-                        album = al
-                    if ar:
-                        artists = ar
                     if ti:
                         title = ti
+                    if ar:
+                        artists = ar
+                    if al:
+                        album = al
                     if ye:
                         year = ye
                 except:
-                    # title = file.rstrip(".mp3").rstrip(".wav")
-                    # duration = artists = album = year = "unknown"
                     pass
                 finally:
                     frame = Frame(self.entry_box, bg=self.color.entry_back, pady=5, padx=10)
@@ -196,11 +203,10 @@ class App:
                     #  +------+-------------------------------------+------+---+---+---+---+
                     #         +-----+-----+-----+------+-----+------+
                     #  +------+-----+-----+-----+------+-----+------+------+---+---+---+---+
-                    # """
-                    Label(frame, image=self.images['thumb'], text="", bg=self.color.entry_back, anchor='center').grid(row=0, column=0, rowspan=2, padx=(0, 5))
+                    Label(frame, image=cover, text=" ", compound='center', font=self.font.iconM,
+                          fg=self.color.ascent, bg=self.color.entry_back, anchor='center').grid(row=0, column=0, rowspan=2, padx=(0, 5))
 
                     Label(frame, text=title, bg=self.color.entry_back, anchor='w', font=self.font.heading).grid(row=0, column=1, columnspan=6, sticky='w')
-
                     if not artists == album == year == 'unknown':
                         Label(frame, text="ARTIST(S):", bg=self.color.entry_back, font=self.font.key, anchor='w').grid(row=1, column=1, sticky='w')
                         Label(frame, text=artists, bg=self.color.entry_back, font=self.font.value, anchor='w').grid(row=1, column=2, sticky='w')
@@ -209,20 +215,34 @@ class App:
                         Label(frame, text="RELEASED IN:", bg=self.color.entry_back, font=self.font.key, anchor='w').grid(row=1, column=5, sticky='w')
                         Label(frame, text=year, bg=self.color.entry_back, font=self.font.value, anchor='w').grid(row=1, column=6, sticky='w')
 
-                    Label(frame, text="...", bg=self.color.entry_back, anchor='e').grid(row=0, column=7, rowspan=2, sticky='e')
+                    frame.columnconfigure(7, weight=1)
+                    button_frame = Frame(frame, bg="")
+                    button_frame.grid(row=0, column=7, rowspan=2, sticky='e')
+                    for cmd in commands:
+                        btn = Label(button_frame, text=cmd[0], font=self.font.iconM, fg=self.color.button_fore, bg=self.color.entry_back)
+                        btn.pack(side='left')
+                        btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.button_hover_fore))
+                        btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.button_fore))
+                        btn.bind('<Button-1>', lambda e=None, b=btn: b.configure(fg=self.color.button_active_fore))
 
                     # bindings
                     frame.bind('<Enter>', lambda e=None, f=frame: self._entry_hover(f, hover=True))
                     frame.bind('<Leave>', lambda e=None, f=frame: self._entry_hover(f, hover=False))
-                    # """
 
     def _entry_hover(self, frame: Frame, hover: bool = True):
         if hover:
             frame.configure(bg=self.color.entry_back_hover)
-            for f1 in frame.winfo_children():
-                f1.configure(bg=self.color.entry_back_hover)
+            for i, f1 in enumerate(frame.winfo_children()):
+                if i == 0:
+                    f1['image'] = self.images['thumb_hover']
+                f1['bg'] = self.color.entry_back_hover
+                for f2 in f1.winfo_children():
+                    f2['bg'] = self.color.entry_back_hover
         else:
             frame.configure(bg=self.color.entry_back)
-            for f1 in frame.winfo_children():
-                f1.configure(bg=self.color.entry_back)
-
+            for i, f1 in enumerate(frame.winfo_children()):
+                if i == 0:
+                    f1['image'] = self.images['thumb']
+                f1['bg'] = self.color.entry_back
+                for f2 in f1.winfo_children():
+                    f2['bg'] = self.color.entry_back
