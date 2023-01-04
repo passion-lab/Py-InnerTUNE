@@ -19,6 +19,9 @@ class ColorDefaults:
                 self.entry_title_fore = "black"
                 self.entry_key_fore = "#919191"
                 self.entry_value_fore = "#474747"
+                self.button_fore = "#adadad"
+                self.button_hover_fore = "#5e5e5e"
+                self.button_active_fore = self.ascent
 
 
 class FontDefaults:
@@ -31,3 +34,6 @@ class FontDefaults:
         self.heading = ('Roboto Condensed Light', 11)
         self.key = ('Roboto Condensed', 9)
         self.value = ('Roboto Condensed Light', 9)
+        self.iconS = ('Segoe UI Symbol', 10)
+        self.iconM = ('Segoe UI Symbol', 12)
+        self.iconL = ('Segoe UI Symbol', 18)
