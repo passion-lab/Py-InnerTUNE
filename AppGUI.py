@@ -47,7 +47,9 @@ class App:
     def configuration(self):
         self.main_window.overrideredirect(True)
         self.main_window.resizable(True, True)
-        self.main_window.geometry("1076x552")
+        w, h = 1076, 552
+        x, y = self.main_window.winfo_screenwidth() / 2 - w / 2, self.main_window.winfo_screenheight() / 2 - h / 2
+        self.main_window.geometry(f"{w}x{h}+{int(x)}+{int(y)}")
 
     def load_files(self):
         image_dir = "./Assets/images/"
