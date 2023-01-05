@@ -1,8 +1,9 @@
 import tkinter
 from tkinter import (
     Tk, Toplevel,
-    Frame, Canvas, Label, Button,
-    PhotoImage, Scrollbar
+    Frame, Canvas, Label, Scale,
+    PhotoImage, Scrollbar,
+    StringVar, DoubleVar
 )
 from tkinter.ttk import Sizegrip
 from os import listdir, curdir, chdir
@@ -29,13 +30,18 @@ class App:
         self.menu_dropdown = False
 
         self.main_window = Tk()
+        self.set_title(self.app_name)
         self.configuration()
         self.load_files()
+        self.status = StringVar(value="NOW PLAYING")
+        self.title = StringVar(value="Dhal Jaun Main Tujhme ...")
+        self.volume = DoubleVar(value=20)
         self.main_bg = self.make_main_background()
         self.header_bg, self.body_bg = self.make_panels()
         # self.make_window_draggable()
         self.make_main_menu()
         self.menu_dropdown_window: Toplevel
+        self.make_playing_controller()
         self.entry_box = self.make_entry_box()
         self.make_song_list()
 
@@ -85,6 +91,9 @@ class App:
         else:
             return self.main_window.winfo_width(), self.main_window.winfo_height(), \
                    self.main_window.winfo_x(), self.main_window.winfo_y()
+
+    def set_title(self, text: str):
+        self.main_window.title(text)
 
     def make_main_background(self):
         main_bg = Canvas(self.main_window, bd=0, highlightthickness=0)
@@ -149,6 +158,57 @@ class App:
             else:
                 self.menu_dropdown_window.destroy()
                 self.menu_dropdown = False
+
+    def make_playing_controller(self):
+        info_frame = Frame(self.header_bg, bg=self.color.head_back, padx=10, pady=5)
+        info_frame.pack(side='left')
+        play = Label(info_frame, text="\ue102", font=self.font.iconL, fg=self.color.play_fore, bg=self.color.head_back)
+        play.pack(side='left', fill='both')
+        status = Label(info_frame, text=self.status.get(), font=self.font.subtitle, fg=self.color.head_subtitle,
+                       bg=self.color.head_back)
+        status.pack(side='top', anchor='sw')
+        title = Label(info_frame, text=self.title.get(), font=self.font.title, fg=self.color.head_title,
+                      bg=self.color.head_back)
+        title.pack(side='top', anchor='w')
+
+        control_frame = Frame(self.header_bg, bg=self.color.head_back, padx=10, pady=3)
+        control_frame.pack(side='right', padx=(0, self.images['menu_button_active'].width()))
+        # row-1
+        top = Frame(control_frame, bg=self.color.head_back)
+        top.pack(side='top', anchor='e')
+        timr = Label(top, text="\ue121", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
+        timr.pack(side='right')
+        plst = Label(top, text="\ue142", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
+        plst.pack(side='right')
+        shfl = Label(top, text="\ue148", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
+        shfl.pack(side='right')
+        rept = Label(top, text="\ue14a", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
+        rept.pack(side='right')
+        stop = Label(top, text="\ue101", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
+        stop.pack(side='right')
+        stop = Label(top, text="\ue15b", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
+        stop.pack(side='right')
+        prev = Label(top, text="\ue100", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
+        prev.pack(side='top')
+        # row-2
+        bottom = Frame(control_frame, bg=self.color.head_back)
+        bottom.pack(side='top', anchor='e')
+        full = Label(bottom, text="\ue247", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        full.pack(side='right')
+        vol = Scale(bottom, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
+                    sliderlength=10, bd=0, width=5, highlightthickness=0,
+                    troughcolor=self.color.slider_back, variable=self.volume)
+        vol.pack(side='right')
+        mute = Label(bottom, text="\ue246", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        mute.pack(side='right')
+        time = Label(bottom, text="00:00:00", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        time.pack(side='right')
+        seek = Scale(bottom, from_=0, to=200, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
+                     sliderlength=2, bd=0, width=5, highlightthickness=0, length=200,
+                     troughcolor=self.color.slider_back, variable=self.volume)
+        seek.pack(side='right')
+        elps = Label(bottom, text="00:00:00", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        elps.pack(side='right')
 
     def make_entry_box(self):
         bg_frame = Frame(self.body_bg)
