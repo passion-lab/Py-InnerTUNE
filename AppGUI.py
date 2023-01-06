@@ -6,6 +6,7 @@ from tkinter import (
     StringVar, DoubleVar
 )
 from tkinter.ttk import Sizegrip
+from tkinter.font import Font
 from os import listdir, curdir, chdir
 from os.path import isfile, isdir
 from PIL import Image, ImageTk
@@ -13,14 +14,17 @@ from io import BytesIO
 from base64 import b64decode
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3
+from functools import partial
 
 # Custom imports
 from AppDefaults import ColorDefaults, FontDefaults
+from AppBackend import Filesystem
 
 
 class App:
 
     def __init__(self):
+        self.backend = Filesystem()
         self.color = ColorDefaults()
         self.font = FontDefaults()
         self.app_name = "InnerTUNE"
@@ -36,6 +40,7 @@ class App:
         self.status = StringVar(value="NOW PLAYING")
         self.title = StringVar(value="Dhal Jaun Main Tujhme ...")
         self.volume = DoubleVar(value=20)
+        self.position = DoubleVar(value=0)
         self.main_bg = self.make_main_background()
         self.header_bg, self.body_bg = self.make_panels()
         # self.make_window_draggable()
@@ -130,12 +135,12 @@ class App:
                                                      highlightcolor=self.color.ascent,
                                                      highlightbackground=self.color.ascent)
                 options = [
-                    ("Open & play a file",),
-                    ("Open & play a folder",),
-                    ("Scan whole filesystem",),
-                    ("App Settings",),
-                    (f"About {self.app_name}",),
-                    (f"Close {self.app_name}",)
+                    ("Open & play a file", partial(self._open_file)),
+                    ("Open & play a folder", partial(self._open_folder)),
+                    ("Scan whole filesystem", partial(self._scan_filesystem)),
+                    ("App Settings", partial(self._settings)),
+                    (f"About {self.app_name}", partial(self._about)),
+                    (f"Close {self.app_name}", partial(self._close))
                 ]
                 for i, option in enumerate(options):
                     cmd = Label(self.menu_dropdown_window, text=option[0], font=self.font.menu, bg=self.color.head_back,
@@ -145,7 +150,7 @@ class App:
                              lambda e=None, c=cmd: c.configure(bg=self.color.main_back, fg=self.color.ascent))
                     cmd.bind('<Leave>',
                              lambda e=None, c=cmd: c.configure(bg=self.color.head_back, fg=self.color.main_fore))
-                    # cmd.bind('<Button-1>', lambda e=None, f=option[1]['func']: f())
+                    cmd.bind('<Button-1>', lambda e=None, f=option[1]: f())
                 # Window options
                 self.menu_dropdown_window.overrideredirect(True)
                 self.menu_dropdown_window.attributes('-alpha', 0.7)
@@ -175,26 +180,28 @@ class App:
         control_frame.pack(side='right', padx=(0, self.images['menu_button_active'].width()))
         # row-1
         top = Frame(control_frame, bg=self.color.head_back)
-        top.pack(side='top', anchor='e')
-        timr = Label(top, text="\ue121", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
-        timr.pack(side='right')
-        plst = Label(top, text="\ue142", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
-        plst.pack(side='right')
-        shfl = Label(top, text="\ue148", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
-        shfl.pack(side='right')
-        rept = Label(top, text="\ue14a", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
-        rept.pack(side='right')
-        stop = Label(top, text="\ue101", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
-        stop.pack(side='right')
-        stop = Label(top, text="\ue15b", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
-        stop.pack(side='right')
-        prev = Label(top, text="\ue100", font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
-        prev.pack(side='top')
+        top.pack(side='bottom', anchor='e')
+        buttons = {
+            "timer": ("\ue121", partial(self._timer)),
+            "playlist": ("\ue142", partial(self._que)),
+            "shuffle": ("\ue148", partial(self._shuffle)),
+            "repeat": ("\ue14a", partial(self._repeat)),
+            "next": ("\ue101", partial(self._next)),
+            "stop": ("\ue15b", partial(self._stop)),
+            "previous": ("\ue100", partial(self._previous)),
+        }
+        for button in buttons:
+            btn = Label(top, text=buttons[button][0], font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
+            btn.pack(side='right')
+            btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.control_hover_fore))
+            btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.control_fore))
+            btn.bind('<Button-1>', lambda e=None, b=buttons[button][1]: b())
         # row-2
         bottom = Frame(control_frame, bg=self.color.head_back)
-        bottom.pack(side='top', anchor='e')
+        bottom.pack(side='bottom', anchor='e')
         full = Label(bottom, text="\ue247", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
         full.pack(side='right')
+        # TODO: Will have to improve the volume bar with custom ttk styling
         vol = Scale(bottom, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
                     sliderlength=10, bd=0, width=5, highlightthickness=0,
                     troughcolor=self.color.slider_back, variable=self.volume)
@@ -203,12 +210,21 @@ class App:
         mute.pack(side='right')
         time = Label(bottom, text="00:00:00", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
         time.pack(side='right')
-        seek = Scale(bottom, from_=0, to=200, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
+        # TODO: Will have to improve the seek bar with custom ttk styling
+        seek = Scale(bottom, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
                      sliderlength=2, bd=0, width=5, highlightthickness=0, length=200,
-                     troughcolor=self.color.slider_back, variable=self.volume)
+                     troughcolor=self.color.slider_back, variable=self.position)
         seek.pack(side='right')
-        elps = Label(bottom, text="00:00:00", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
-        elps.pack(side='right')
+        elapse = Label(bottom, text="00:00:00", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        elapse.pack(side='right')
+
+        # Bindings
+        full.bind('<Enter>', lambda e=None: full.configure(fg=self.color.control_hover_fore))
+        full.bind('<Leave>', lambda e=None: full.configure(fg=self.color.control_fore))
+        full.bind('<Button-1>', lambda e=None: self._full)
+        mute.bind('<Enter>', lambda e=None: mute.configure(fg=self.color.control_hover_fore))
+        mute.bind('<Leave>', lambda e=None: mute.configure(fg=self.color.control_fore))
+        mute.bind('<Button-1>', lambda e=None: self._mute)
 
     def make_entry_box(self):
         bg_frame = Frame(self.body_bg)
@@ -229,12 +245,12 @@ class App:
 
     def make_song_list(self):
         commands = (
-            ["\ue1f8", ],
-            ["\ue19f", ],
-            ["\ue142", ],
-            ["\ue110", ],
-            ["\ue193", ],
-            ["\ue107", ]
+            ["\ue1f8", partial(self._favorite)],  # favorite
+            ["\ue19f", partial(self._like)],  # like
+            ["\ue142", partial(self._add_playlist)],  # add to playlist
+            ["\ue110", partial(self._play_next)],  # play next
+            ["\ue193", partial(self._edit_meta)],  # edit metadata
+            ["\ue107", partial(self._delete)]   # delete
         )
         test_path = "C:/Users/SSW-10/Downloads/"
         chdir(test_path)
@@ -268,7 +284,10 @@ class App:
                     Label(frame, image=cover, text=" ", compound='center', font=self.font.iconM,
                           fg=self.color.ascent, bg=self.color.entry_back, anchor='center').grid(row=0, column=0, rowspan=2, padx=(0, 5))
 
-                    Label(frame, text=title, bg=self.color.entry_back, anchor='w', font=self.font.heading).grid(row=0, column=1, columnspan=6, sticky='w')
+                    title = Label(frame, text=title, bg=self.color.entry_back, anchor='w', font=self.font.heading, fg=self.color.entry_title_fore)
+                    title.grid(row=0, column=1, columnspan=6, sticky='w')
+                    title.bind('<Enter>', lambda e=None, t=title: t.configure(fg=self.color.ascent))
+                    title.bind('<Leave>', lambda e=None, t=title: t.configure(fg=self.color.entry_title_fore))
                     if not artists == album == year == 'unknown':
                         Label(frame, text="ARTIST(S):", bg=self.color.entry_back, font=self.font.key, anchor='w').grid(row=1, column=1, sticky='w')
                         Label(frame, text=artists, bg=self.color.entry_back, font=self.font.value, anchor='w').grid(row=1, column=2, sticky='w')
@@ -285,7 +304,7 @@ class App:
                         btn.pack(side='left')
                         btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.button_hover_fore))
                         btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.button_fore))
-                        btn.bind('<Button-1>', lambda e=None, b=btn: b.configure(fg=self.color.button_active_fore))
+                        btn.bind('<Button-1>', lambda e=None, c=cmd[1]: c())
 
                     # bindings
                     frame.bind('<Enter>', lambda e=None, f=frame: self._entry_hover(f, hover=True))
@@ -308,3 +327,78 @@ class App:
                 f1['bg'] = self.color.entry_back
                 for f2 in f1.winfo_children():
                     f2['bg'] = self.color.entry_back
+
+    # BACKEND function calls for Control Buttons
+    def _play(self):
+        pass
+
+    def _previous(self):
+        pass
+
+    def _stop(self):
+        pass
+
+    def _next(self):
+        pass
+
+    def _repeat(self):
+        print("Repeat")
+
+    def _shuffle(self):
+        pass
+
+    def _que(self):
+        pass
+
+    def _timer(self):
+        pass
+
+    def _seek(self):
+        pass
+
+    def _mute(self):
+        pass
+
+    def _volume(self):
+        pass
+
+    def _full(self):
+        pass
+
+    # BACKEND function calls for Individual Entry Buttons
+    def _favorite(self):
+        pass
+
+    def _like(self):
+        pass
+
+    def _add_playlist(self):
+        pass
+
+    def _play_next(self):
+        pass
+
+    def _edit_meta(self):
+        pass
+
+    def _delete(self):
+        pass
+
+    # Main Menu functions
+    def _open_file(self):
+        self.backend.open_files(title=f"{self.app_name} - Select music files you want to play with")
+
+    def _open_folder(self):
+        self.backend.open_folder(title=f"{self.app_name} - Choose a folder contains music to open with")
+
+    def _scan_filesystem(self):
+        pass
+
+    def _settings(self):
+        pass
+
+    def _about(self):
+        pass
+
+    def _close(self):
+        self.main_window.destroy()
