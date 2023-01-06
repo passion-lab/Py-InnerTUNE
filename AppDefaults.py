@@ -19,7 +19,8 @@ class ColorDefaults:
                 self.head_title = "#2b2b2b"
                 self.play_fore = self.ascent
                 self.control_fore = "#777777"
-                self.sec_btn_hover_fore = "#2d2d2d"
+                self.control_hover_fore = "#373737"
+                self.control_active_fore = self.ascent
                 self.slider_back = "#a8a8a8"
 
                 self.entry_back = "#dbdbdb"
@@ -28,7 +29,6 @@ class ColorDefaults:
                 self.entry_key_fore = "#919191"
                 self.entry_value_fore = "#474747"
                 self.button_fore = "#adadad"
-
                 self.button_hover_fore = "#5e5e5e"
                 self.button_active_fore = self.ascent
 
