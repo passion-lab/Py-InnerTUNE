@@ -18,20 +18,23 @@ from functools import partial
 
 # Custom imports
 from AppDefaults import ColorDefaults, FontDefaults
-from AppBackend import Filesystem
+from AppBackend import Filesystem, AudioPlayer
 
 
 class App:
 
     def __init__(self):
-        self.backend = Filesystem()
         self.color = ColorDefaults()
         self.font = FontDefaults()
+        self.backend = Filesystem()
+        self.audio = AudioPlayer()
         self.app_name = "InnerTUNE"
         self.last_X = 0
         self.last_Y = 0
         self.images = {}
-        self.menu_dropdown = False
+        self.menu_dropdown: bool = False
+        self.is_playing: bool = False
+        self.is_paused: bool = False
 
         self.main_window = Tk()
         self.set_title(self.app_name)
@@ -45,10 +48,11 @@ class App:
         self.header_bg, self.body_bg = self.make_panels()
         # self.make_window_draggable()
         self.make_main_menu()
+        self.main_menu_window: Toplevel = ...
         self.menu_dropdown_window: Toplevel
         self.make_playing_controller()
         self.entry_box = self.make_entry_box()
-        self.make_song_list()
+        # self.make_song_list()
 
         self.bindings()
 
@@ -106,6 +110,10 @@ class App:
 
         return main_bg
 
+    def _exit_main_menu(self):
+        self.main_menu_window.destroy()
+        self.menu_dropdown = False
+
     def make_panels(self):
         header = Canvas(self.main_bg, bg=self.color.head_back, bd=0, highlightthickness=0, height=60)
         header.pack(side='top', fill='x')
@@ -134,6 +142,7 @@ class App:
                 self.menu_dropdown_window = Toplevel(self.main_window, bg=self.color.main_back, highlightthickness=1,
                                                      highlightcolor=self.color.ascent,
                                                      highlightbackground=self.color.ascent)
+                self.main_menu_window = self.menu_dropdown_window
                 options = [
                     ("Open & play a file", partial(self._open_file)),
                     ("Open & play a folder", partial(self._open_folder)),
@@ -169,11 +178,9 @@ class App:
         info_frame.pack(side='left')
         play = Label(info_frame, text="\ue102", font=self.font.iconL, fg=self.color.play_fore, bg=self.color.head_back)
         play.pack(side='left', fill='both')
-        status = Label(info_frame, text=self.status.get(), font=self.font.subtitle, fg=self.color.head_subtitle,
-                       bg=self.color.head_back)
+        status = Label(info_frame, textvariable=self.status, font=self.font.subtitle, fg=self.color.head_subtitle, bg=self.color.head_back)
         status.pack(side='top', anchor='sw')
-        title = Label(info_frame, text=self.title.get(), font=self.font.title, fg=self.color.head_title,
-                      bg=self.color.head_back)
+        title = Label(info_frame, textvariable=self.title, font=self.font.title, fg=self.color.head_title, bg=self.color.head_back)
         title.pack(side='top', anchor='w')
 
         control_frame = Frame(self.header_bg, bg=self.color.head_back, padx=10, pady=3)
@@ -219,12 +226,16 @@ class App:
         elapse.pack(side='right')
 
         # Bindings
+        play.bind('<Button-1>', lambda e=None: self._play())
         full.bind('<Enter>', lambda e=None: full.configure(fg=self.color.control_hover_fore))
         full.bind('<Leave>', lambda e=None: full.configure(fg=self.color.control_fore))
         full.bind('<Button-1>', lambda e=None: self._full)
         mute.bind('<Enter>', lambda e=None: mute.configure(fg=self.color.control_hover_fore))
         mute.bind('<Leave>', lambda e=None: mute.configure(fg=self.color.control_fore))
         mute.bind('<Button-1>', lambda e=None: self._mute)
+
+    def make_preload_bg(self):
+        pass
 
     def make_entry_box(self):
         bg_frame = Frame(self.body_bg)
@@ -243,78 +254,58 @@ class App:
 
         return entry_box
 
-    def make_song_list(self):
+    def make_song_list(self, songs: list[dict]):
         commands = (
-            ["\ue1f8", partial(self._favorite)],  # favorite
-            ["\ue19f", partial(self._like)],  # like
-            ["\ue142", partial(self._add_playlist)],  # add to playlist
-            ["\ue110", partial(self._play_next)],  # play next
+            ["\ue107", partial(self._delete)],   # delete
             ["\ue193", partial(self._edit_meta)],  # edit metadata
-            ["\ue107", partial(self._delete)]   # delete
+            ["\ue110", partial(self._play_next)],  # play next
+            ["\ue142", partial(self._add_playlist)],  # add to playlist
+            ["\ue19f", partial(self._like)],  # like
+            ["\ue1f8", partial(self._favorite)]  # favorite
         )
-        test_path = "C:/Users/SSW-10/Downloads/"
-        chdir(test_path)
-        for file in listdir(test_path):
-            if isfile(file) and (file.endswith(".mp3") or file.endswith(".wav")):
-                title = file.rstrip(".mp3").rstrip(".wav")[:125] + " ..." if len(file) > 125 else file.rstrip(".mp3").rstrip(".wav")
-                duration = artists = album = year = "unknown"
-                cover = self.images['thumb']
-                # track = MP3(file)
-                try:
-                    tag = ID3(file)
+        for song in songs:
+            details = (("ARTIST(S):", song['artists']), ("ALBUM:", song['album']), ("RELEASED:", song['release']))
 
-                    co = ImageTk.PhotoImage(Image.open(BytesIO(tag.get("APIC:").data)).resize((32, 32), resample=0))
-                    ti, ar, al, ye = tag.get('TIT2'), tag.get('TPE1'), tag.get('TALB'), tag.get('TDRC')
-                    if ti:
-                        title = ti
-                    if ar:
-                        artists = ar
-                    if al:
-                        album = al
-                    if ye:
-                        year = ye
-                except:
-                    pass
-                finally:
-                    frame = Frame(self.entry_box, bg=self.color.entry_back, pady=5, padx=10)
-                    frame.pack(fill='x', padx=30, pady=5)
-                    #  +------+-------------------------------------+------+---+---+---+---+
-                    #         +-----+-----+-----+------+-----+------+
-                    #  +------+-----+-----+-----+------+-----+------+------+---+---+---+---+
-                    Label(frame, image=cover, text=" ", compound='center', font=self.font.iconM,
-                          fg=self.color.ascent, bg=self.color.entry_back, anchor='center').grid(row=0, column=0, rowspan=2, padx=(0, 5))
+            frame = Frame(self.entry_box, padx=15, pady=10, bg=self.color.entry_back, width=1076-60, height=32+25)
+            frame.pack(padx=30, pady=7, fill='x')
+            frame.pack_propagate(False)  # Fixes the width and the height for each entry frames
+            c_frm = Frame(frame, bg=self.color.entry_back)
+            c_frm.pack(side='right', anchor='e')
 
-                    title = Label(frame, text=title, bg=self.color.entry_back, anchor='w', font=self.font.heading, fg=self.color.entry_title_fore)
-                    title.grid(row=0, column=1, columnspan=6, sticky='w')
-                    title.bind('<Enter>', lambda e=None, t=title: t.configure(fg=self.color.ascent))
-                    title.bind('<Leave>', lambda e=None, t=title: t.configure(fg=self.color.entry_title_fore))
-                    if not artists == album == year == 'unknown':
-                        Label(frame, text="ARTIST(S):", bg=self.color.entry_back, font=self.font.key, anchor='w').grid(row=1, column=1, sticky='w')
-                        Label(frame, text=artists, bg=self.color.entry_back, font=self.font.value, anchor='w').grid(row=1, column=2, sticky='w')
-                        Label(frame, text="ALBUM:", bg=self.color.entry_back, font=self.font.key, anchor='w').grid(row=1, column=3, sticky='w')
-                        Label(frame, text=album, bg=self.color.entry_back, font=self.font.value, anchor='w').grid(row=1, column=4, sticky='w')
-                        Label(frame, text="RELEASED IN:", bg=self.color.entry_back, font=self.font.key, anchor='w').grid(row=1, column=5, sticky='w')
-                        Label(frame, text=year, bg=self.color.entry_back, font=self.font.value, anchor='w').grid(row=1, column=6, sticky='w')
+            thumb = Label(frame, image=self.images['thumb'], bg=self.color.entry_back, anchor='w')
+            thumb.pack(side='left', fill='both', anchor='w', padx=(0, 5))
+            heading = Label(frame, text=song['title'], font=self.font.heading, fg=self.color.entry_heading_fore, bg=self.color.entry_back, anchor='w')
+            heading.pack(side='top', anchor='w')
 
-                    frame.columnconfigure(7, weight=1)
-                    button_frame = Frame(frame, bg="")
-                    button_frame.grid(row=0, column=7, rowspan=2, sticky='e')
-                    for cmd in commands:
-                        btn = Label(button_frame, text=cmd[0], font=self.font.iconM, fg=self.color.button_fore, bg=self.color.entry_back)
-                        btn.pack(side='left')
-                        btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.button_hover_fore))
-                        btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.button_fore))
-                        btn.bind('<Button-1>', lambda e=None, c=cmd[1]: c())
+            if not song['artists'] == song['album'] == song['release'] == 'Unknown':
+                for detail in details:
+                    Label(frame, text=detail[0], font=self.font.key, fg=self.color.entry_key_fore, bg=self.color.entry_back, anchor='w').pack(side='left', anchor='w')
+                    Label(frame, text=detail[1], font=self.font.value, fg=self.color.entry_value_fore, bg=self.color.entry_back, anchor='w').pack(side='left', anchor='w')
+            else:
+                # TODO: Random quotations about music would be great!
+                Label(frame, text="Details not available!", font=self.font.na, fg=self.color.entry_na_fore, bg=self.color.entry_back, anchor='w').pack(side='left', anchor='w')
 
-                    # bindings
-                    frame.bind('<Enter>', lambda e=None, f=frame: self._entry_hover(f, hover=True))
-                    frame.bind('<Leave>', lambda e=None, f=frame: self._entry_hover(f, hover=False))
+            for command in commands:
+                btn = Label(c_frm, text=command[0], font=self.font.iconM, fg=self.color.entry_btn_fore, bg=self.color.entry_back, anchor='e')
+                btn.pack(side='right', fill='both', anchor='e')
+                btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.entry_btn_hover_fore))
+                btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.entry_btn_fore))
+
+            # Bindings...
+            frame.bind('<Enter>', lambda e=None, f=frame: self._entry_hover(f, hover=True))
+            frame.bind('<Leave>', lambda e=None, f=frame: self._entry_hover(f, hover=False))
+            frame.bind('<Double-Button-1>', lambda e=None: self._play())
+            thumb.bind('<Button-1>', lambda e=None, s=song['id']: self._play(song_id=s, force_play=True))
+            heading.bind('<Enter>', lambda e=None, h=heading: h.configure(fg=self.color.ascent))
+            heading.bind('<Leave>', lambda e=None, h=heading: h.configure(fg=self.color.entry_heading_fore))
+
+            self.status.set("PLAY YOUR InnerTUNE")
 
     def _entry_hover(self, frame: Frame, hover: bool = True):
         if hover:
             frame.configure(bg=self.color.entry_back_hover)
             for i, f1 in enumerate(frame.winfo_children()):
-                if i == 0:
+                if i == 1:
                     f1['image'] = self.images['thumb_hover']
                 f1['bg'] = self.color.entry_back_hover
                 for f2 in f1.winfo_children():
@@ -322,21 +313,43 @@ class App:
         else:
             frame.configure(bg=self.color.entry_back)
             for i, f1 in enumerate(frame.winfo_children()):
-                if i == 0:
+                if i == 1:
                     f1['image'] = self.images['thumb']
                 f1['bg'] = self.color.entry_back
                 for f2 in f1.winfo_children():
                     f2['bg'] = self.color.entry_back
 
     # BACKEND function calls for Control Buttons
-    def _play(self):
-        pass
+    def _play(self, song_id=None, force_play: bool = False):
+        # If not forced to play individual file from song entries
+        if not force_play:
+            if not self.is_playing and not self.is_paused:
+                self.audio.play_pause("PLAY")
+                self.is_playing = True
+            elif self.is_paused:
+                self.audio.play_pause(play_state="RESUME")
+                self.is_paused = False
+            elif not self.is_paused:
+                self.audio.play_pause(play_state="PAUSE")
+                self.is_playing = True
+        # If forced to play individual file from song entries
+        else:
+            self.audio.stop()
+            song = self.backend.get_song(song_id)
+            self.audio.load(song['path'])
+            self.audio.play_pause("PLAY")
+            self.status.set("NOW PLAYING")
+            self.title.set(song['title'])
+            self.is_playing = True
+
 
     def _previous(self):
         pass
 
     def _stop(self):
-        pass
+        if self.is_playing:
+            self.audio.stop()
+            self.is_playing = False
 
     def _next(self):
         pass
@@ -386,19 +399,40 @@ class App:
 
     # Main Menu functions
     def _open_file(self):
-        self.backend.open_files(title=f"{self.app_name} - Select music files you want to play with")
+        self._exit_main_menu()
+        self.status.set("OPENING MUSIC FILES...")
+        done = self.backend.open_files(title=f"{self.app_name} - Select music files you want to play with")
+        if done:
+            try:
+                self.entry_box.winfo_children()[0].pack_forget()  # First clear the existing entry
+            except:
+                pass
+            finally:
+                self.make_song_list(self.backend.get_current_songs())  # Then, make new entries
+                self.audio.load(file=self.backend.get_current_songs()[0]['path'])
 
     def _open_folder(self):
-        self.backend.open_folder(title=f"{self.app_name} - Choose a folder contains music to open with")
+        self._exit_main_menu()
+        self.status.set("OPENING FOLDER...")
+        done = self.backend.open_folder(title=f"{self.app_name} - Choose a folder contains music to open with")
+        if done:
+            try:
+                self.entry_box.winfo_children()[0].pack_forget()  # First clear the existing entry
+            except:
+                pass
+            finally:
+                self.make_song_list(self.backend.get_current_songs())  # Then, make new entries
+                self.audio.load(file=self.backend.get_current_songs()[0]['path'])
 
     def _scan_filesystem(self):
-        pass
+        self._exit_main_menu()
 
     def _settings(self):
-        pass
+        self._exit_main_menu()
 
     def _about(self):
-        pass
+        self._exit_main_menu()
 
     def _close(self):
+        self._exit_main_menu()
         self.main_window.destroy()
