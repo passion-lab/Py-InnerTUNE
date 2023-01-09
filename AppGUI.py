@@ -323,7 +323,7 @@ class App:
     def _play(self, song_id=None, force_play: bool = False):
         # If not forced to play individual file from song entries
         if not force_play:
-            if not self.is_playing and not self.is_paused:
+            if not self.is_playing:
                 self.audio.play_pause("PLAY")
                 self.is_playing = True
             elif self.is_paused:
@@ -331,7 +331,7 @@ class App:
                 self.is_paused = False
             elif not self.is_paused:
                 self.audio.play_pause(play_state="PAUSE")
-                self.is_playing = True
+                self.is_paused = True
         # If forced to play individual file from song entries
         else:
             self.audio.stop()
