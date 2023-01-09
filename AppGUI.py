@@ -50,6 +50,11 @@ class App:
         self.make_main_menu()
         self.main_menu_window: Toplevel = ...
         self.menu_dropdown_window: Toplevel
+        self.tgl_play: Label = ...
+        self.tgl_queue_list: Label = ...
+        self.tgl_alarm: Label = ...
+        self.tgl_repeat: Label = ...
+        self.tgl_shuffle: Label = ...
         self.make_playing_controller()
         self.entry_box = self.make_entry_box()
         # self.make_song_list()
@@ -176,8 +181,8 @@ class App:
     def make_playing_controller(self):
         info_frame = Frame(self.header_bg, bg=self.color.head_back, padx=10, pady=5)
         info_frame.pack(side='left')
-        play = Label(info_frame, text="\ue102", font=self.font.iconL, fg=self.color.play_fore, bg=self.color.head_back)
-        play.pack(side='left', fill='both')
+        self.tgl_play = Label(info_frame, text="\ue102", font=self.font.iconL, fg=self.color.play_fore, bg=self.color.head_back)
+        self.tgl_play.pack(side='left', fill='both')
         status = Label(info_frame, textvariable=self.status, font=self.font.subtitle, fg=self.color.head_subtitle, bg=self.color.head_back)
         status.pack(side='top', anchor='sw')
         title = Label(info_frame, textvariable=self.title, font=self.font.title, fg=self.color.head_title, bg=self.color.head_back)
@@ -226,7 +231,7 @@ class App:
         elapse.pack(side='right')
 
         # Bindings
-        play.bind('<Button-1>', lambda e=None: self._play())
+        self.tgl_play.bind('<Button-1>', lambda e=None: self._play())
         full.bind('<Enter>', lambda e=None: full.configure(fg=self.color.control_hover_fore))
         full.bind('<Leave>', lambda e=None: full.configure(fg=self.color.control_fore))
         full.bind('<Button-1>', lambda e=None: self._full)
@@ -324,13 +329,16 @@ class App:
         # If not forced to play individual file from song entries
         if not force_play:
             if not self.is_playing:
+                self.tgl_play.configure(text="\ue103")
                 self.status.set("NOW PLAYING")
                 self.audio.play_pause(play_state="PLAY")
                 self.is_playing = True
             elif self.is_paused:
+                self.tgl_play.configure(text="\ue103")
                 self.audio.play_pause(play_state="RESUME")
                 self.is_paused = False
             elif not self.is_paused:
+                self.tgl_play.configure(text="\ue102")
                 self.audio.play_pause(play_state="PAUSE")
                 self.is_paused = True
         # If forced to play individual file from song entries
@@ -338,11 +346,11 @@ class App:
             self.audio.stop()
             song = self.backend.get_song(song_id)
             self.audio.load(song['path'])
+            self.tgl_play.configure(text="\ue103")
             self.audio.play_pause("PLAY")
             self.status.set("NOW PLAYING")
             self.title.set(song['title'])
             self.is_playing = True
-
 
     def _previous(self):
         pass
