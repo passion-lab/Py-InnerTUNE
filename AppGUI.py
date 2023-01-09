@@ -211,7 +211,7 @@ class App:
         # TODO: Will have to improve the volume bar with custom ttk styling
         vol = Scale(bottom, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
                     sliderlength=10, bd=0, width=5, highlightthickness=0,
-                    troughcolor=self.color.slider_back, variable=self.volume)
+                    troughcolor=self.color.slider_back, variable=self.volume, command=self._volume)
         vol.pack(side='right')
         mute = Label(bottom, text="\ue246", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
         mute.pack(side='right')
@@ -324,7 +324,8 @@ class App:
         # If not forced to play individual file from song entries
         if not force_play:
             if not self.is_playing:
-                self.audio.play_pause("PLAY")
+                self.status.set("NOW PLAYING")
+                self.audio.play_pause(play_state="PLAY")
                 self.is_playing = True
             elif self.is_paused:
                 self.audio.play_pause(play_state="RESUME")
@@ -373,7 +374,7 @@ class App:
         pass
 
     def _volume(self):
-        pass
+        print(self.volume.get)
 
     def _full(self):
         pass
