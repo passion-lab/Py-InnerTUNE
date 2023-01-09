@@ -46,18 +46,18 @@ class App:
         self.position = DoubleVar(value=0)
         self.main_bg = self.make_main_background()
         self.header_bg, self.body_bg = self.make_panels()
+        self.make_preload_bg()
         # self.make_window_draggable()
         self.make_main_menu()
         self.main_menu_window: Toplevel = ...
         self.menu_dropdown_window: Toplevel
         self.tgl_play: Label = ...
-        self.tgl_queue_list: Label = ...
-        self.tgl_alarm: Label = ...
         self.tgl_repeat: Label = ...
         self.tgl_shuffle: Label = ...
+        self.tgl_queue_list: Label = ...
+        self.tgl_alarm: Label = ...
+        self.tgl_active_heading: Label = ...
         self.make_playing_controller()
-        self.entry_box = self.make_entry_box()
-        # self.make_song_list()
 
         self.bindings()
 
@@ -75,7 +75,7 @@ class App:
         image_dir = "./Assets/images/"
         self.images["menu_button_inactive"] = PhotoImage(file=image_dir + 'menu_button_inactive.png')
         self.images["menu_button_active"] = PhotoImage(file=image_dir + 'menu_button_active.png')
-        # self.images["thumb"] = PhotoImage(file=image_dir + 'thumb.png')
+        self.images["entry_banner"] = ImageTk.PhotoImage(Image.open(image_dir + 'entry_banner.png'))
         self.images["thumb"] = ImageTk.PhotoImage(Image.open(image_dir + 'thumb.png'))
         self.images["thumb_hover"] = ImageTk.PhotoImage(Image.open(image_dir + 'thumb_hover.png'))
 
@@ -240,7 +240,7 @@ class App:
         mute.bind('<Button-1>', lambda e=None: self._mute)
 
     def make_preload_bg(self):
-        pass
+        Label(self.body_bg, image=self.images['entry_banner'], bg=self.color.main_back).place(relx=0.5, rely=0.5, anchor='center')
 
     def make_entry_box(self):
         bg_frame = Frame(self.body_bg)
@@ -268,10 +268,11 @@ class App:
             ["\ue19f", partial(self._like)],  # like
             ["\ue1f8", partial(self._favorite)]  # favorite
         )
+        entry_box = self.make_entry_box()
         for song in songs:
             details = (("ARTIST(S):", song['artists']), ("ALBUM:", song['album']), ("RELEASED:", song['release']))
 
-            frame = Frame(self.entry_box, padx=15, pady=10, bg=self.color.entry_back, width=1076-60, height=32+25)
+            frame = Frame(entry_box, padx=15, pady=10, bg=self.color.entry_back, width=1076-60, height=32+25)
             frame.pack(padx=30, pady=7, fill='x')
             frame.pack_propagate(False)  # Fixes the width and the height for each entry frames
             c_frm = Frame(frame, bg=self.color.entry_back)
@@ -299,7 +300,7 @@ class App:
             # Bindings...
             frame.bind('<Enter>', lambda e=None, f=frame: self._entry_hover(f, hover=True))
             frame.bind('<Leave>', lambda e=None, f=frame: self._entry_hover(f, hover=False))
-            frame.bind('<Double-Button-1>', lambda e=None: self._play())
+            frame.bind('<Double-Button-1>', lambda e=None, s=song['id']: self._play(song_id=s, force_play=True))
             thumb.bind('<Button-1>', lambda e=None, s=song['id']: self._play(song_id=s, force_play=True))
             heading.bind('<Enter>', lambda e=None, h=heading: h.configure(fg=self.color.ascent))
             heading.bind('<Leave>', lambda e=None, h=heading: h.configure(fg=self.color.entry_heading_fore))
@@ -325,7 +326,8 @@ class App:
                     f2['bg'] = self.color.entry_back
 
     # BACKEND function calls for Control Buttons
-    def _play(self, song_id=None, force_play: bool = False):
+    def _play(self, song_id=None, force_play: bool = False, **element):
+        # **element: Additional elements for visual change (e.g., entry thumbnail, entry heading)
         # If not forced to play individual file from song entries
         if not force_play:
             if not self.is_playing:
@@ -350,6 +352,8 @@ class App:
             self.audio.play_pause("PLAY")
             self.status.set("NOW PLAYING")
             self.title.set(song['title'])
+            element['thumb'].configure(image="")
+            element['heading'].configure(fg=self.color.ascent)
             self.is_playing = True
 
     def _previous(self):
