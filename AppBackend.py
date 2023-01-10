@@ -106,8 +106,9 @@ class Filesystem:
 class AudioPlayer:
     from typing import Literal
 
-    def __init__(self):
+    def __init__(self, initial_volume: float = 0.2):
         mixer.init(channels=2)
+        mixer.music.set_volume(initial_volume)
         self.loaded_file = ""
 
     def load(self, file):
@@ -138,14 +139,14 @@ class AudioPlayer:
         mixer.music.queue(files)
 
     @staticmethod
-    def volume(kind: Literal["MUTE", "FULL", "VOL"]):
+    def volume(kind: Literal["MUTE", "FULL", "VOL"], level: float = ...):
         match kind:
             case "MUTE":
                 mixer.music.set_volume(0.0)
             case "FULL":
                 mixer.music.set_volume(1.0)
             case "VOL":
-                pass
+                mixer.music.set_volume(level)
 
 
 if __name__ == '__main__':
