@@ -137,6 +137,16 @@ class AudioPlayer:
     def queue(files):
         mixer.music.queue(files)
 
+    @staticmethod
+    def volume(kind: Literal["MUTE", "FULL", "VOL"]):
+        match kind:
+            case "MUTE":
+                mixer.music.set_volume(0.0)
+            case "FULL":
+                mixer.music.set_volume(1.0)
+            case "VOL":
+                pass
+
 
 if __name__ == '__main__':
     ab = Filesystem()
