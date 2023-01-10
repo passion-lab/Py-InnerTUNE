@@ -35,6 +35,7 @@ class App:
         self.menu_dropdown: bool = False
         self.is_playing: bool = False
         self.is_paused: bool = False
+        self.active_entry: [(Label, Label)] = []
 
         self.main_window = Tk()
         self.set_title(self.app_name)
@@ -78,6 +79,7 @@ class App:
         self.images["entry_banner"] = ImageTk.PhotoImage(Image.open(image_dir + 'entry_banner.png'))
         self.images["thumb"] = ImageTk.PhotoImage(Image.open(image_dir + 'thumb.png'))
         self.images["thumb_hover"] = ImageTk.PhotoImage(Image.open(image_dir + 'thumb_hover.png'))
+        self.images["thumb_active"] = ImageTk.PhotoImage(Image.open(image_dir + 'thumb_active.png'))
 
     def bindings(self):
         self.header_bg.bind('<Button-1>', self._save_last_click)
@@ -300,8 +302,8 @@ class App:
             # Bindings...
             frame.bind('<Enter>', lambda e=None, f=frame: self._entry_hover(f, hover=True))
             frame.bind('<Leave>', lambda e=None, f=frame: self._entry_hover(f, hover=False))
-            frame.bind('<Double-Button-1>', lambda e=None, s=song['id']: self._play(song_id=s, force_play=True))
-            thumb.bind('<Button-1>', lambda e=None, s=song['id']: self._play(song_id=s, force_play=True))
+            frame.bind('<Double-Button-1>', lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t, hd=h))
+            thumb.bind('<Button-1>', lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t, hd=h))
             heading.bind('<Enter>', lambda e=None, h=heading: h.configure(fg=self.color.ascent))
             heading.bind('<Leave>', lambda e=None, h=heading: h.configure(fg=self.color.entry_heading_fore))
 
@@ -352,8 +354,9 @@ class App:
             self.audio.play_pause("PLAY")
             self.status.set("NOW PLAYING")
             self.title.set(song['title'])
-            element['thumb'].configure(image="")
-            element['heading'].configure(fg=self.color.ascent)
+            element['th'].configure(image=self.images['thumb_active'])
+            element['hd'].configure(fg=self.color.ascent)
+            self.active_entry = [(element['th'], element['hd'])]
             self.is_playing = True
 
     def _previous(self):
@@ -361,6 +364,10 @@ class App:
 
     def _stop(self):
         if self.is_playing:
+            if self.active_entry[0]:
+                self.active_entry[0][0].configure(image=self.images['thumb'])
+                self.active_entry[0][1].configure(fg=self.color.entry_heading_fore)
+                self.active_entry.clear()
             self.audio.stop()
             self.is_playing = False
 
