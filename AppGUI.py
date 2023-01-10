@@ -42,8 +42,8 @@ class App:
         self.set_title(self.app_name)
         self.configuration()
         self.load_files()
-        self.status = StringVar(value="NOW PLAYING")
-        self.title = StringVar(value="Dhal Jaun Main Tujhme ...")
+        self.status = StringVar(value="UPLOAD FILE(S)/FOLDER")
+        self.title = StringVar(value="Play your favorite tune ...")
         self.volume = DoubleVar(value=20)
         self.position = DoubleVar(value=0)
         self.main_bg = self.make_main_background()
@@ -311,40 +311,65 @@ class App:
                 self.last_active_entry = [(thumb, heading, song['title'])]
 
         self.status.set("START YOUR INNER TUNE WITH")
-        self.title.set(self.last_active_entry[0][2])
+        self.title.set(self.last_active_entry[0][2])  # Set the title to the first song's title as set before
 
     def _entry_hover(self, frame: Frame, hover: bool = True):
+        # Changes all elements' background on mouse hover
         if hover:
             frame.configure(bg=self.color.entry_back_hover)
+            # For all child elements within a frame
             for i, f1 in enumerate(frame.winfo_children()):
+                # If the child elements is the entries heading
                 if i == 1:
                     try:
+                        # If the entry is in active entry list (i.e., currently playing) then,
                         if f1 in self.active_entry[0]:
+                            # Retain the thumb same that is active,
                             self.active_entry[0][0]['image'] = self.images['thumb_active']
                         else:
+                            # otherwise change on hover as usual
                             f1['image'] = self.images['thumb_hover']
                     except:
+                        # Else, change on hover
                         f1['image'] = self.images['thumb_hover']
+                    # Do always
                     finally:
+                        # If the last played song is in the last_active_list and the song is currently playing
                         if f1 in self.last_active_entry[0] and self.is_playing:
+                            # Retain the thumb same as current playing
                             self.last_active_entry[0][0]['image'] = self.images['thumb_active']
+
+                # Otherwise, change all elements and their children's background
                 f1['bg'] = self.color.entry_back_hover
                 for f2 in f1.winfo_children():
                     f2['bg'] = self.color.entry_back_hover
+
+        # Changes all elements' background on mouse leave
         else:
             frame.configure(bg=self.color.entry_back)
+            # For all child elements within a frame
             for i, f1 in enumerate(frame.winfo_children()):
+                # If the child elements is the entries heading
                 if i == 1:
                     try:
+                        # If the entry is in active entry list (i.e., currently playing)
                         if f1 in self.active_entry[0]:
+                            # Retain the thumb same that is active,
                             self.active_entry[0][0]['image'] = self.images['thumb_active']
                         else:
+                            # otherwise change on hover as usual
                             f1['image'] = self.images['thumb']
                     except:
+                        # Else, change on hover
                         f1['image'] = self.images['thumb']
+                    # Do always
                     finally:
+                        # If the last played song is in the last_active_list and the song is currently playing
                         if f1 in self.last_active_entry[0] and self.is_playing:
+                            # Retain the thumb same as current playing
                             self.last_active_entry[0][0]['image'] = self.images['thumb_active']
+
+                # Otherwise, change all elements and their children's background
                 f1['bg'] = self.color.entry_back
                 for f2 in f1.winfo_children():
                     f2['bg'] = self.color.entry_back
@@ -353,6 +378,7 @@ class App:
     def _play(self, song_id=None, force_play: bool = False, **element):
         # **element: Additional elements for visual change (e.g., entry thumbnail, entry heading)
         # If not forced to play individual file from song entries
+
         if not force_play:
             if not self.is_playing:
                 self.tgl_play.configure(text="\ue103")
@@ -380,8 +406,10 @@ class App:
             self.audio.play_pause("PLAY")
             self.status.set("NOW PLAYING")
             self.title.set(song['title'])
+            # Change the thumb and the heading of the currently playing song's entry
             element['th'].configure(image=self.images['thumb_active'])
             element['hd'].configure(fg=self.color.ascent)
+            # Update both active_entry and last_active_entry with the currently playing song
             self.active_entry = [(element['th'], element['hd'])]
             self.last_active_entry = [(element['th'], element['hd'], song['title'])]
             self.is_playing = True
@@ -390,20 +418,25 @@ class App:
         pass
 
     def _stop(self):
+        # If a song is currently playing
         if self.is_playing:
+            # If there is an entry in the active_entry list
             try:
                 if self.active_entry[0]:
+                    # Change the thumb and heading back to normal again
                     self.active_entry[0][0]['image'] = self.images['thumb']
                     self.active_entry[0][1]['fg'] = self.color.entry_heading_fore
+                    # Update the last_active list with the song just stopped
                     self.last_active_entry = [(self.active_entry[0][0], self.active_entry[0][1])]
+                    # Clear the active_entry list as no song will be played on hitting the stop button
                     self.active_entry.clear()
             except: pass
             finally:
                 # Reset the styling of last active song entry
                 self.last_active_entry[0][0]['image'] = self.images['thumb']
                 self.last_active_entry[0][1]['fg'] = self.color.entry_heading_fore
-                self.audio.stop()
                 self.tgl_play.configure(text="\ue102")
+                self.audio.stop()
                 self.is_playing = False
 
     def _next(self):
