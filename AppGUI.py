@@ -22,6 +22,7 @@ from AppBackend import Filesystem, AudioPlayer
 
 
 class App:
+    default_volume: float = 2.0
 
     def __init__(self):
         self.color = ColorDefaults()
@@ -37,6 +38,8 @@ class App:
         self.is_paused: bool = False
         self.active_entry: [(Label, Label)] = []
         self.last_active_entry: [(Label, Label, str)] = []
+        self.is_muted: bool = False
+        self.is_full: bool = False
 
         self.main_window = Tk()
         self.set_title(self.app_name)
@@ -44,7 +47,7 @@ class App:
         self.load_files()
         self.status = StringVar(value="UPLOAD FILE(S)/FOLDER")
         self.title = StringVar(value="Play your favorite tune ...")
-        self.volume = DoubleVar(value=20)
+        self.volume = DoubleVar(value=0.2)
         self.position = DoubleVar(value=0)
         self.main_bg = self.make_main_background()
         self.header_bg, self.body_bg = self.make_panels()
@@ -54,6 +57,8 @@ class App:
         self.main_menu_window: Toplevel = ...
         self.menu_dropdown_window: Toplevel
         self.tgl_play: Label = ...
+        self.tgl_mute: Label = ...
+        self.tgl_full: Label = ...
         self.tgl_repeat: Label = ...
         self.tgl_shuffle: Label = ...
         self.tgl_queue_list: Label = ...
@@ -214,20 +219,20 @@ class App:
         # row-2
         bottom = Frame(control_frame, bg=self.color.head_back)
         bottom.pack(side='bottom', anchor='e')
-        full = Label(bottom, text="\ue247", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
-        full.pack(side='right')
+        self.tgl_full = Label(bottom, text="\ue247", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        self.tgl_full.pack(side='right')
         # TODO: Will have to improve the volume bar with custom ttk styling
-        vol = Scale(bottom, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
-                    sliderlength=10, bd=0, width=5, highlightthickness=0,
+        vol = Scale(bottom, from_=0.0, to=1.0, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
+                    sliderlength=10, bd=0, width=5, highlightthickness=0, resolution=0.01,  cursor='size_we',
                     troughcolor=self.color.slider_back, variable=self.volume, command=self._volume)
         vol.pack(side='right')
-        mute = Label(bottom, text="\ue246", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
-        mute.pack(side='right')
+        self.tgl_mute = Label(bottom, text="\ue246", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        self.tgl_mute.pack(side='right')
         time = Label(bottom, text="00:00:00", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
         time.pack(side='right')
         # TODO: Will have to improve the seek bar with custom ttk styling
         seek = Scale(bottom, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
-                     sliderlength=2, bd=0, width=5, highlightthickness=0, length=200,
+                     sliderlength=2, bd=0, width=5, highlightthickness=0, length=200,  cursor='size_we',
                      troughcolor=self.color.slider_back, variable=self.position)
         seek.pack(side='right')
         elapse = Label(bottom, text="00:00:00", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
@@ -235,12 +240,12 @@ class App:
 
         # Bindings
         self.tgl_play.bind('<Button-1>', lambda e=None: self._play())
-        full.bind('<Enter>', lambda e=None: full.configure(fg=self.color.control_hover_fore))
-        full.bind('<Leave>', lambda e=None: full.configure(fg=self.color.control_fore))
-        full.bind('<Button-1>', lambda e=None: self._full)
-        mute.bind('<Enter>', lambda e=None: mute.configure(fg=self.color.control_hover_fore))
-        mute.bind('<Leave>', lambda e=None: mute.configure(fg=self.color.control_fore))
-        mute.bind('<Button-1>', lambda e=None: self._mute)
+        self.tgl_full.bind('<Enter>', lambda e=None: self.tgl_full.configure(fg=self.color.control_hover_fore))
+        self.tgl_full.bind('<Leave>', lambda e=None: self.tgl_full.configure(fg=self.color.control_fore))
+        self.tgl_full.bind('<Button-1>', lambda e=None: self._full())
+        self.tgl_mute.bind('<Enter>', lambda e=None: self.tgl_mute.configure(fg=self.color.control_hover_fore))
+        self.tgl_mute.bind('<Leave>', lambda e=None: self.tgl_mute.configure(fg=self.color.control_fore))
+        self.tgl_mute.bind('<Button-1>', lambda e=None: self._mute())
 
     def make_preload_bg(self):
         Label(self.body_bg, image=self.images['entry_banner'], bg=self.color.main_back).place(relx=0.5, rely=0.5, anchor='center')
@@ -458,13 +463,31 @@ class App:
         pass
 
     def _mute(self):
-        pass
+        if self.is_muted:
+            self.audio.volume(kind="VOL", level=self.default_volume)
+            self.volume.set(self.default_volume)
+            self.tgl_mute.configure(fg=self.color.control_fore)
+            self.is_muted = False
+        else:
+            self.audio.volume(kind="MUTE")
+            self.volume.set(0.0)
+            self.tgl_mute.configure(fg=self.color.control_active_fore)
+            self.is_muted = True
 
-    def _volume(self):
-        print(self.volume.get)
+    def _volume(self, e=None):
+        self.audio.volume(kind="VOL", level=self.volume.get())
 
     def _full(self):
-        pass
+        if self.is_full:
+            self.audio.volume(kind="VOL", level=self.default_volume)
+            self.volume.set(self.default_volume)
+            self.tgl_mute.configure(fg=self.color.control_fore)
+            self.is_full = False
+        else:
+            self.audio.volume(kind="FULL")
+            self.volume.set(1.0)
+            self.tgl_mute.configure(fg=self.color.control_active_fore)
+            self.is_full = True
 
     # BACKEND function calls for Individual Entry Buttons
     def _favorite(self):
