@@ -128,7 +128,10 @@ class AudioPlayer:
     @staticmethod
     def stop():
         mixer.music.stop()
-        mixer.music.unpause()
+
+    @staticmethod
+    def unload():
+        mixer.music.unload()
 
     @staticmethod
     def queue(files):
