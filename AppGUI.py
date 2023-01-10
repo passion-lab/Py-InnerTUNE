@@ -22,13 +22,13 @@ from AppBackend import Filesystem, AudioPlayer
 
 
 class App:
-    default_volume: float = 2.0
+    default_volume: float = 0.3
 
     def __init__(self):
         self.color = ColorDefaults()
         self.font = FontDefaults()
         self.backend = Filesystem()
-        self.audio = AudioPlayer()
+        self.audio = AudioPlayer(initial_volume=self.default_volume)
         self.app_name = "InnerTUNE"
         self.last_X = 0
         self.last_Y = 0
@@ -47,7 +47,7 @@ class App:
         self.load_files()
         self.status = StringVar(value="UPLOAD FILE(S)/FOLDER")
         self.title = StringVar(value="Play your favorite tune ...")
-        self.volume = DoubleVar(value=0.2)
+        self.volume = DoubleVar(value=self.default_volume)
         self.position = DoubleVar(value=0)
         self.main_bg = self.make_main_background()
         self.header_bg, self.body_bg = self.make_panels()
