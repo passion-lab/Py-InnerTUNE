@@ -36,6 +36,7 @@ class App:
         self.is_playing: bool = False
         self.is_paused: bool = False
         self.active_entry: [(Label, Label)] = []
+        self.last_active_entry: [(Label, Label, str)] = []
 
         self.main_window = Tk()
         self.set_title(self.app_name)
@@ -271,7 +272,7 @@ class App:
             ["\ue1f8", partial(self._favorite)]  # favorite
         )
         entry_box = self.make_entry_box()
-        for song in songs:
+        for i, song in enumerate(songs):
             details = (("ARTIST(S):", song['artists']), ("ALBUM:", song['album']), ("RELEASED:", song['release']))
 
             frame = Frame(entry_box, padx=15, pady=10, bg=self.color.entry_back, width=1076-60, height=32+25)
@@ -304,17 +305,29 @@ class App:
             frame.bind('<Leave>', lambda e=None, f=frame: self._entry_hover(f, hover=False))
             frame.bind('<Double-Button-1>', lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t, hd=h))
             thumb.bind('<Button-1>', lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t, hd=h))
-            heading.bind('<Enter>', lambda e=None, h=heading: h.configure(fg=self.color.ascent))
-            heading.bind('<Leave>', lambda e=None, h=heading: h.configure(fg=self.color.entry_heading_fore))
 
-            self.status.set("PLAY YOUR InnerTUNE")
+            # First entry added to the last_active_entry for thumb and heading change on hitting controller play button
+            if i == 0:
+                self.last_active_entry = [(thumb, heading, song['title'])]
+
+        self.status.set("START YOUR INNER TUNE WITH")
+        self.title.set(self.last_active_entry[0][2])
 
     def _entry_hover(self, frame: Frame, hover: bool = True):
         if hover:
             frame.configure(bg=self.color.entry_back_hover)
             for i, f1 in enumerate(frame.winfo_children()):
                 if i == 1:
-                    f1['image'] = self.images['thumb_hover']
+                    try:
+                        if f1 in self.active_entry[0]:
+                            self.active_entry[0][0]['image'] = self.images['thumb_active']
+                        else:
+                            f1['image'] = self.images['thumb_hover']
+                    except:
+                        f1['image'] = self.images['thumb_hover']
+                    finally:
+                        if f1 in self.last_active_entry[0] and self.is_playing:
+                            self.last_active_entry[0][0]['image'] = self.images['thumb_active']
                 f1['bg'] = self.color.entry_back_hover
                 for f2 in f1.winfo_children():
                     f2['bg'] = self.color.entry_back_hover
@@ -322,7 +335,16 @@ class App:
             frame.configure(bg=self.color.entry_back)
             for i, f1 in enumerate(frame.winfo_children()):
                 if i == 1:
-                    f1['image'] = self.images['thumb']
+                    try:
+                        if f1 in self.active_entry[0]:
+                            self.active_entry[0][0]['image'] = self.images['thumb_active']
+                        else:
+                            f1['image'] = self.images['thumb']
+                    except:
+                        f1['image'] = self.images['thumb']
+                    finally:
+                        if f1 in self.last_active_entry[0] and self.is_playing:
+                            self.last_active_entry[0][0]['image'] = self.images['thumb_active']
                 f1['bg'] = self.color.entry_back
                 for f2 in f1.winfo_children():
                     f2['bg'] = self.color.entry_back
@@ -335,6 +357,10 @@ class App:
             if not self.is_playing:
                 self.tgl_play.configure(text="\ue103")
                 self.status.set("NOW PLAYING")
+                # Access the last_active_entry and change the thumb and heading style either hitting the controller
+                # play button first or hitting the play button after invoking the stop button
+                self.last_active_entry[0][0]['image'] = self.images['thumb_active']
+                self.last_active_entry[0][1]['fg'] = self.color.ascent
                 self.audio.play_pause(play_state="PLAY")
                 self.is_playing = True
             elif self.is_paused:
@@ -347,7 +373,7 @@ class App:
                 self.is_paused = True
         # If forced to play individual file from song entries
         else:
-            self.audio.stop()
+            self._stop()
             song = self.backend.get_song(song_id)
             self.audio.load(song['path'])
             self.tgl_play.configure(text="\ue103")
@@ -357,6 +383,7 @@ class App:
             element['th'].configure(image=self.images['thumb_active'])
             element['hd'].configure(fg=self.color.ascent)
             self.active_entry = [(element['th'], element['hd'])]
+            self.last_active_entry = [(element['th'], element['hd'], song['title'])]
             self.is_playing = True
 
     def _previous(self):
@@ -364,12 +391,20 @@ class App:
 
     def _stop(self):
         if self.is_playing:
-            if self.active_entry[0]:
-                self.active_entry[0][0].configure(image=self.images['thumb'])
-                self.active_entry[0][1].configure(fg=self.color.entry_heading_fore)
-                self.active_entry.clear()
-            self.audio.stop()
-            self.is_playing = False
+            try:
+                if self.active_entry[0]:
+                    self.active_entry[0][0]['image'] = self.images['thumb']
+                    self.active_entry[0][1]['fg'] = self.color.entry_heading_fore
+                    self.last_active_entry = [(self.active_entry[0][0], self.active_entry[0][1])]
+                    self.active_entry.clear()
+            except: pass
+            finally:
+                # Reset the styling of last active song entry
+                self.last_active_entry[0][0]['image'] = self.images['thumb']
+                self.last_active_entry[0][1]['fg'] = self.color.entry_heading_fore
+                self.audio.stop()
+                self.tgl_play.configure(text="\ue102")
+                self.is_playing = False
 
     def _next(self):
         pass
@@ -455,4 +490,6 @@ class App:
 
     def _close(self):
         self._exit_main_menu()
+        self._stop()
+        self.audio.unload()
         self.main_window.destroy()
