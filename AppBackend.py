@@ -107,13 +107,12 @@ class AudioPlayer:
     from typing import Literal
 
     def __init__(self):
-        mixer.init()
+        mixer.init(channels=2)
         self.loaded_file = ""
 
     def load(self, file):
         mixer.music.load(file)
         self.loaded_file = file
-        print(file)
 
     @staticmethod
     def play_pause(play_state: Literal["PLAY", "PAUSE", "RESUME"]):
@@ -132,6 +131,7 @@ class AudioPlayer:
     @staticmethod
     def unload():
         mixer.music.unload()
+        mixer.quit()
 
     @staticmethod
     def queue(files):
