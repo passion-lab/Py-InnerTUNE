@@ -38,6 +38,7 @@ class App:
         self.is_paused: bool = False
         self.active_entry: [(Label, Label)] = []
         self.last_active_entry: [(Label, Label, str)] = []
+        self.active_controls: list[Label] = []
         self.is_muted: bool = False
         self.is_full: bool = False
 
@@ -240,11 +241,11 @@ class App:
 
         # Bindings
         self.tgl_play.bind('<Button-1>', lambda e=None: self._play())
-        self.tgl_full.bind('<Enter>', lambda e=None: self.tgl_full.configure(fg=self.color.control_hover_fore))
-        self.tgl_full.bind('<Leave>', lambda e=None: self.tgl_full.configure(fg=self.color.control_fore))
+        self.tgl_full.bind('<Enter>', lambda e=None: self.tgl_full.configure(fg=self.color.control_hover_fore) if self.tgl_full not in self.active_controls else None)
+        self.tgl_full.bind('<Leave>', lambda e=None: self.tgl_full.configure(fg=self.color.control_fore) if self.tgl_full not in self.active_controls else None)
         self.tgl_full.bind('<Button-1>', lambda e=None: self._full())
-        self.tgl_mute.bind('<Enter>', lambda e=None: self.tgl_mute.configure(fg=self.color.control_hover_fore))
-        self.tgl_mute.bind('<Leave>', lambda e=None: self.tgl_mute.configure(fg=self.color.control_fore))
+        self.tgl_mute.bind('<Enter>', lambda e=None: self.tgl_mute.configure(fg=self.color.control_hover_fore) if self.tgl_mute not in self.active_controls else None)
+        self.tgl_mute.bind('<Leave>', lambda e=None: self.tgl_mute.configure(fg=self.color.control_fore) if self.tgl_mute not in self.active_controls else None)
         self.tgl_mute.bind('<Button-1>', lambda e=None: self._mute())
 
     def make_preload_bg(self):
@@ -317,6 +318,14 @@ class App:
 
         self.status.set("START YOUR INNER TUNE WITH")
         self.title.set(self.last_active_entry[0][2])  # Set the title to the first song's title as set before
+
+    def _set_control(self, widget: Label, will_set: bool = True):
+        if will_set:
+            self.active_controls.append(widget)
+            widget.configure(fg=self.color.control_active_fore)
+        else:
+            self.active_controls.remove(widget)
+            widget.configure(fg=self.color.control_fore)
 
     def _entry_hover(self, frame: Frame, hover: bool = True):
         # Changes all elements' background on mouse hover
@@ -466,27 +475,49 @@ class App:
         if self.is_muted:
             self.audio.volume(kind="VOL", level=self.default_volume)
             self.volume.set(self.default_volume)
-            self.tgl_mute.configure(fg=self.color.control_fore)
+            self._set_control(self.tgl_mute, will_set=False)
             self.is_muted = False
         else:
             self.audio.volume(kind="MUTE")
             self.volume.set(0.0)
-            self.tgl_mute.configure(fg=self.color.control_active_fore)
+            self._set_control(self.tgl_mute, will_set=True)
+            # If full enabled already, disable it by clicking on mute button
+            if self.is_full:
+                self._set_control(self.tgl_full, will_set=False)
+                self.is_full = False
             self.is_muted = True
 
     def _volume(self, e=None):
-        self.audio.volume(kind="VOL", level=self.volume.get())
+        lvl = self.volume.get()
+        self.audio.volume(kind="VOL", level=lvl)
+        if lvl == 0.0 and not self.is_muted:
+            self._set_control(self.tgl_mute, will_set=True)
+            self.is_muted = True
+        elif lvl == 1.0 and not self.is_full:
+            self._set_control(self.tgl_full, will_set=True)
+            self.is_full = True
+        else:
+            if self.is_muted:
+                self._set_control(self.tgl_mute, will_set=False)
+                self.is_muted = False
+            if self.is_full:
+                self._set_control(self.tgl_full, will_set=False)
+                self.is_full = False
 
     def _full(self):
         if self.is_full:
             self.audio.volume(kind="VOL", level=self.default_volume)
             self.volume.set(self.default_volume)
-            self.tgl_mute.configure(fg=self.color.control_fore)
+            self._set_control(self.tgl_full, will_set=False)
             self.is_full = False
         else:
             self.audio.volume(kind="FULL")
             self.volume.set(1.0)
-            self.tgl_mute.configure(fg=self.color.control_active_fore)
+            self._set_control(self.tgl_full)
+            # If mute enabled already, disable it by clicking on full button
+            if self.is_muted:
+                self._set_control(self.tgl_mute, will_set=False)
+                self.is_muted = False
             self.is_full = True
 
     # BACKEND function calls for Individual Entry Buttons
