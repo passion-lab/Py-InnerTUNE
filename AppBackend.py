@@ -115,6 +115,9 @@ class AudioPlayer:
         mixer.music.load(file)
         self.loaded_file = file
 
+    def length(self):
+        return mixer.Sound(self.loaded_file).get_length()
+
     @staticmethod
     def play_pause(play_state: Literal["PLAY", "PAUSE", "RESUME"]):
         match play_state:
@@ -137,6 +140,14 @@ class AudioPlayer:
     @staticmethod
     def queue(files):
         mixer.music.queue(files)
+
+    # @staticmethod
+    def loop(self, repeat: bool = True):
+        if repeat:
+            mixer.music.queue(self.loaded_file, loops=-1)
+        else:
+            # TODO: To be fixed
+            mixer.music.queue(self.loaded_file, loops=0)
 
     @staticmethod
     def volume(kind: Literal["MUTE", "FULL", "VOL"], level: float = ...):
