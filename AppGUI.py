@@ -432,14 +432,7 @@ class App:
     def _control_actions(self, button: Label, action: str):
         match action:
             case "repeat":
-                if self.is_repeat:
-                    self.audio.loop(repeat=False)
-                    self._set_control(button, will_set=False)
-                    self.is_repeat = False
-                else:
-                    self.audio.loop(repeat=True)
-                    self._set_control(button, will_set=True)
-                    self.is_repeat = True
+                self._repeat(element=button)
 
     def _previous(self):
         pass
@@ -469,15 +462,14 @@ class App:
     def _next(self):
         pass
 
-    def _repeat(self, ev):
+    def _repeat(self, element: Label):
         if self.is_repeat:
-            # self.audio.loop(repeat=False)
-            self._set_control(self.tgl_repeat, will_set=False)
+            self.audio.loop(repeat=False)
+            self._set_control(element, will_set=False)
             self.is_repeat = False
         else:
-            # self._set_control(self.tgl_repeat, will_set=True)
-            print(ev.widget)
-            # self.audio.loop(repeat=True)
+            self.audio.loop(repeat=True)
+            self._set_control(element, will_set=True)
             self.is_repeat = True
 
     def _shuffle(self):
