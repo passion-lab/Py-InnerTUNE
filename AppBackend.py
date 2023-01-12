@@ -115,7 +115,7 @@ class AudioPlayer:
         mixer.music.load(file)
         self.loaded_file = file
 
-    def length(self):
+    def length(self) -> float:
         return mixer.Sound(self.loaded_file).get_length()
 
     @staticmethod
@@ -127,6 +127,14 @@ class AudioPlayer:
                 mixer.music.pause()
             case "RESUME":
                 mixer.music.unpause()
+
+    @staticmethod
+    def current_position() -> int:
+        return mixer.music.get_pos()
+
+    @staticmethod
+    def currently_playing() -> bool:
+        return mixer.music.get_busy()
 
     @staticmethod
     def stop():
