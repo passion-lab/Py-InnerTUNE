@@ -36,6 +36,7 @@ class App:
         self.menu_dropdown: bool = False
         self.is_playing: bool = False
         self.is_paused: bool = False
+        self.is_repeat: bool = False
         self.active_entry: [(Label, Label)] = []
         self.last_active_entry: [(Label, Label, str)] = []
         self.active_controls: list[Label] = []
@@ -203,20 +204,20 @@ class App:
         top = Frame(control_frame, bg=self.color.head_back)
         top.pack(side='bottom', anchor='e')
         buttons = {
-            "timer": ("\ue121", partial(self._timer)),
-            "playlist": ("\ue142", partial(self._que)),
-            "shuffle": ("\ue148", partial(self._shuffle)),
-            "repeat": ("\ue14a", partial(self._repeat)),
-            "next": ("\ue101", partial(self._next)),
-            "stop": ("\ue15b", partial(self._stop)),
-            "previous": ("\ue100", partial(self._previous)),
+            "timer": "\ue121",
+            "playlist": "\ue142",
+            "shuffle": "\ue148",
+            "repeat": "\ue14a",
+            "next": "\ue101",
+            "stop": "\ue15b",
+            "previous": "\ue100",
         }
         for button in buttons:
-            btn = Label(top, text=buttons[button][0], font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
+            btn = Label(top, text=buttons[button], font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
             btn.pack(side='right')
-            btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.control_hover_fore))
-            btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.control_fore))
-            btn.bind('<Button-1>', lambda e=None, b=buttons[button][1]: b())
+            btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.control_hover_fore) if not b in self.active_controls else None)
+            btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.control_fore) if not b in self.active_controls else None)
+            btn.bind('<Button-1>', lambda e=None, b=btn, a=button: self._control_actions(button=b, action=a))
         # row-2
         bottom = Frame(control_frame, bg=self.color.head_back)
         bottom.pack(side='bottom', anchor='e')
@@ -428,6 +429,18 @@ class App:
             self.last_active_entry = [(element['th'], element['hd'], song['title'])]
             self.is_playing = True
 
+    def _control_actions(self, button: Label, action: str):
+        match action:
+            case "repeat":
+                if self.is_repeat:
+                    self.audio.loop(repeat=False)
+                    self._set_control(button, will_set=False)
+                    self.is_repeat = False
+                else:
+                    self.audio.loop(repeat=True)
+                    self._set_control(button, will_set=True)
+                    self.is_repeat = True
+
     def _previous(self):
         pass
 
@@ -456,8 +469,16 @@ class App:
     def _next(self):
         pass
 
-    def _repeat(self):
-        print("Repeat")
+    def _repeat(self, ev):
+        if self.is_repeat:
+            # self.audio.loop(repeat=False)
+            self._set_control(self.tgl_repeat, will_set=False)
+            self.is_repeat = False
+        else:
+            # self._set_control(self.tgl_repeat, will_set=True)
+            print(ev.widget)
+            # self.audio.loop(repeat=True)
+            self.is_repeat = True
 
     def _shuffle(self):
         pass
