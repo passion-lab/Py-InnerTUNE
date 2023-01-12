@@ -1,4 +1,4 @@
-import tkinter
+# import tkinter
 from tkinter import (
     Tk, Toplevel,
     Frame, Canvas, Label, Scale,
@@ -6,15 +6,17 @@ from tkinter import (
     StringVar, DoubleVar
 )
 from tkinter.ttk import Sizegrip
-from tkinter.font import Font
-from os import listdir, curdir, chdir
-from os.path import isfile, isdir
+# from tkinter.font import Font
+# from os import listdir, curdir, chdir
+# from os.path import isfile, isdir
 from PIL import Image, ImageTk
-from io import BytesIO
-from base64 import b64decode
-from mutagen.mp3 import MP3
-from mutagen.id3 import ID3
+# from io import BytesIO
+# from base64 import b64decode
+# from mutagen.mp3 import MP3
+# from mutagen.id3 import ID3
 from functools import partial
+from time import sleep, strftime, gmtime
+from threading import Thread
 
 # Custom imports
 from AppDefaults import ColorDefaults, FontDefaults
@@ -51,6 +53,8 @@ class App:
         self.title = StringVar(value="Play your favorite tune ...")
         self.volume = DoubleVar(value=self.default_volume)
         self.position = DoubleVar(value=0)
+        self.duration = StringVar(value="00:00:00")
+        self.elapsed = StringVar(value="00:00:00")
         self.main_bg = self.make_main_background()
         self.header_bg, self.body_bg = self.make_panels()
         self.make_preload_bg()
@@ -61,12 +65,10 @@ class App:
         self.tgl_play: Label = ...
         self.tgl_mute: Label = ...
         self.tgl_full: Label = ...
-        self.tgl_repeat: Label = ...
-        self.tgl_shuffle: Label = ...
-        self.tgl_queue_list: Label = ...
-        self.tgl_alarm: Label = ...
         self.tgl_active_heading: Label = ...
+        self.seek_bar: Scale = ...
         self.make_playing_controller()
+        self.thread_progress = Thread(target=self._progress)
 
         self.bindings()
 
@@ -230,15 +232,15 @@ class App:
         vol.pack(side='right')
         self.tgl_mute = Label(bottom, text="\ue246", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
         self.tgl_mute.pack(side='right')
-        time = Label(bottom, text="00:00:00", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
-        time.pack(side='right')
+        duration = Label(bottom, textvariable=self.duration, font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        duration.pack(side='right')
         # TODO: Will have to improve the seek bar with custom ttk styling
-        seek = Scale(bottom, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
-                     sliderlength=2, bd=0, width=5, highlightthickness=0, length=200,  cursor='size_we',
-                     troughcolor=self.color.slider_back, variable=self.position)
-        seek.pack(side='right')
-        elapse = Label(bottom, text="00:00:00", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
-        elapse.pack(side='right')
+        self.seek_bar = Scale(bottom, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
+                              sliderlength=2, bd=0, width=5, highlightthickness=0, length=200,  cursor='size_we',
+                              troughcolor=self.color.slider_back, variable=self.position)
+        self.seek_bar.pack(side='right')
+        elapsed = Label(bottom, textvariable=self.elapsed, font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        elapsed.pack(side='right')
 
         # Bindings
         self.tgl_play.bind('<Button-1>', lambda e=None: self._play())
@@ -402,8 +404,12 @@ class App:
                 # play button first or hitting the play button after invoking the stop button
                 self.last_active_entry[0][0]['image'] = self.images['thumb_active']
                 self.last_active_entry[0][1]['fg'] = self.color.ascent
+                # Sets the total duration of the currently loaded song and total range of the seek bar
+                self.duration.set(self._get_hms(seconds=self.audio.length()))
+                self.seek_bar.configure(to=self.audio.length())
                 self.audio.play_pause(play_state="PLAY")
                 self.is_playing = True
+                self.thread_progress.start()
             elif self.is_paused:
                 self.tgl_play.configure(text="\ue103")
                 self.audio.play_pause(play_state="RESUME")
@@ -427,12 +433,39 @@ class App:
             # Update both active_entry and last_active_entry with the currently playing song
             self.active_entry = [(element['th'], element['hd'])]
             self.last_active_entry = [(element['th'], element['hd'], song['title'])]
+            # Sets the total duration of the currently loaded song and total range of the seek bar
+            self.duration.set(self._get_hms(seconds=self.audio.length()))
+            self.seek_bar.configure(to=self.audio.length())
             self.is_playing = True
+            self.thread_progress.start()
+
+    def _progress(self):
+        if self.is_playing:
+            if self.audio.currently_playing():
+                self.elapsed.set(self._get_hms(seconds=self.audio.current_position() / 1000))
+                self.position.set(self.audio.current_position() / 1000)
+                sleep(1)
+            else:
+                if self.position.get() < self.audio.length():
+                    pass
+                else:
+                    self.elapsed.set("00:00:00")
+                    self.position.set(0.0)
+                    self.tgl_play.configure(text="\ue102")
+            self._progress()
+        else:
+            self.elapsed.set("00:00:00")
+            self.position.set(0.0)
+
+            self.thread_progress.join()
+            return None  # Stops the current thread
 
     def _control_actions(self, button: Label, action: str):
         match action:
             case "repeat":
                 self._repeat(element=button)
+            case "stop":
+                self._stop()
 
     def _previous(self):
         pass
@@ -593,3 +626,8 @@ class App:
         self._stop()
         self.audio.unload()
         self.main_window.destroy()
+
+    # Custom functions
+    @staticmethod
+    def _get_hms(seconds: float):
+        return strftime("%H:%M:%S", gmtime(seconds))
