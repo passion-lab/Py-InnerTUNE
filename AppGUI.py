@@ -236,7 +236,7 @@ class App:
         duration.pack(side='right')
         # TODO: Will have to improve the seek bar with custom ttk styling
         self.seek_bar = Scale(bottom, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
-                              sliderlength=2, bd=0, width=5, highlightthickness=0, length=200,  cursor='size_we',
+                              sliderlength=2, bd=0, width=5, highlightthickness=0, length=200,  cursor='size_we', command=self._seek,
                               troughcolor=self.color.slider_back, variable=self.position)
         self.seek_bar.pack(side='right')
         elapsed = Label(bottom, textvariable=self.elapsed, font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
@@ -516,8 +516,10 @@ class App:
     def _timer(self):
         pass
 
-    def _seek(self):
-        pass
+    def _seek(self, e=None):
+        position = self.position.get()
+        self.audio.play_from(position=position)
+        self.position.set(position)
 
     def _mute(self):
         if self.is_muted:
