@@ -129,6 +129,10 @@ class AudioPlayer:
                 mixer.music.unpause()
 
     @staticmethod
+    def play_from(position: float):
+        mixer.music.play(start=position)
+
+    @staticmethod
     def current_position() -> int:
         return mixer.music.get_pos()
 
