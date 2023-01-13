@@ -16,7 +16,7 @@ from PIL import Image, ImageTk
 # from mutagen.id3 import ID3
 from functools import partial
 from time import sleep, strftime, gmtime
-from threading import Thread
+from threading import Thread, Event
 
 # Custom imports
 from AppDefaults import ColorDefaults, FontDefaults
@@ -68,7 +68,7 @@ class App:
         self.tgl_active_heading: Label = ...
         self.seek_bar: Scale = ...
         self.make_playing_controller()
-        self.thread_progress = Thread(target=self._progress)
+        self.thread_event = Event()
 
         self.bindings()
 
@@ -409,7 +409,8 @@ class App:
                 self.seek_bar.configure(to=self.audio.length())
                 self.audio.play_pause(play_state="PLAY")
                 self.is_playing = True
-                self.thread_progress.start()
+                # Starts the progress thread
+                Thread(target=self._progress).start()
             elif self.is_paused:
                 self.tgl_play.configure(text="\ue103")
                 self.audio.play_pause(play_state="RESUME")
@@ -437,7 +438,8 @@ class App:
             self.duration.set(self._get_hms(seconds=self.audio.length()))
             self.seek_bar.configure(to=self.audio.length())
             self.is_playing = True
-            self.thread_progress.start()
+            # Starts the progress thread
+            Thread(target=self._progress).start()
 
     def _progress(self):
         if self.is_playing:
@@ -457,7 +459,7 @@ class App:
             self.elapsed.set("00:00:00")
             self.position.set(0.0)
 
-            self.thread_progress.join()
+            self.thread_event.set()  # (Optional) Thread stop signal
             return None  # Stops the current thread
 
     def _control_actions(self, button: Label, action: str):
