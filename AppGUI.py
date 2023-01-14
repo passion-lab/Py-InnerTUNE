@@ -34,6 +34,7 @@ class App:
         self.app_name = "InnerTUNE"
         self.last_X = 0
         self.last_Y = 0
+
         self.images = {}
         self.menu_dropdown: bool = False
         self.is_playing: bool = False
@@ -145,13 +146,13 @@ class App:
         grip.bind('<B1-Motion>', self._drag_window)
 
     def make_main_menu(self):
-        img = self.images['menu_button_inactive']
+        img = self.images["menu_button_inactive"]
         img1 = self.images["menu_button_active"]
         self.main_window.update()
         btn = self.header_bg.create_image(self.header_bg.winfo_width() - img.width() / 2, img.height() / 2, image=img)
         self.header_bg.tag_bind(btn, '<Enter>', lambda e=None: self.header_bg.itemconfigure(btn, image=img1))
         self.header_bg.tag_bind(btn, '<Leave>', lambda e=None: self.header_bg.itemconfigure(btn, image=img))
-        self.header_bg.tag_bind(btn, '<Button-1>', lambda e=None: __menu_options())
+        self.header_bg.tag_bind(btn, '<ButtonRelease-1>', lambda e=None: __menu_options())
 
         def __menu_options():
             if not self.menu_dropdown:
