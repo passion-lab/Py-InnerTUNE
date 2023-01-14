@@ -150,8 +150,8 @@ class AudioPlayer:
         mixer.quit()
 
     @staticmethod
-    def queue(files):
-        mixer.music.queue(files)
+    def queue(file):
+        mixer.music.queue(file)
 
     # @staticmethod
     def loop(self, repeat: bool = True):
