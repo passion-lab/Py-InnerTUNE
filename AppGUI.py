@@ -14,8 +14,9 @@ from PIL import Image, ImageTk
 # from base64 import b64decode
 # from mutagen.mp3 import MP3
 # from mutagen.id3 import ID3
-from functools import partial
 from time import sleep, strftime, gmtime
+from typing import Literal
+from functools import partial
 from threading import Thread, Event
 
 # Custom imports
@@ -45,6 +46,8 @@ class App:
         self.active_controls: list[Label] = []
         self.is_muted: bool = False
         self.is_full: bool = False
+        self.total_songs: int = 0
+        self.current_song_index: int = 0
 
         self.main_window = Tk()
         self.set_title(self.app_name)
@@ -273,6 +276,7 @@ class App:
         return entry_box
 
     def make_song_list(self, songs: list[dict]):
+        self.total_songs = len(songs)
         commands = (
             ["\ue107", partial(self._delete)],   # delete
             ["\ue193", partial(self._edit_meta)],  # edit metadata
@@ -410,6 +414,7 @@ class App:
                 self.seek_bar.configure(to=self.audio.length())
                 self.audio.play_pause(play_state="PLAY")
                 self.is_playing = True
+                self.current_song_index = 0
                 # Starts the progress thread
                 Thread(target=self._progress).start()
             elif self.is_paused:
@@ -469,6 +474,22 @@ class App:
                 self._repeat(element=button)
             case "stop":
                 self._stop()
+
+    def _load_next_prev(self, parameter: Literal["NEXT", "PREV"]):
+        if self.current_song_index == 0:  # If it's playing the first song...
+            next_index = self.current_song_index + 1
+            prev_index = self.total_songs - 1  # Previous song will be the last one.
+        elif self.current_song_index == self.total_songs - 1:  # If it's playing the last song...
+            next_index = 0  # Next song will be the first one.
+            prev_index = self.current_song_index - 1
+        else:
+            next_index, prev_index = self.current_song_index + 1, self.current_song_index - 1
+
+        match parameter:
+            case "NEXT":
+                self.audio.queue(file=self.backend.current_songs[next_index]['path'])
+            case "PREV":
+                self.audio.queue(file=self.backend.current_songs[prev_index]['path'])
 
     def _previous(self):
         pass
