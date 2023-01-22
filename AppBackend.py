@@ -15,7 +15,7 @@ from pygame import mixer
 
 class Filesystem:
 
-    def __init__(self, ):
+    def __init__(self):
 
         # Initialization defaults
         self.default_folder = getenv('USERPROFILE') + '/Music'
