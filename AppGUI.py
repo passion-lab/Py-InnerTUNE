@@ -35,9 +35,11 @@ class App:
         self.app_name = "InnerTUNE"
         self.last_X = 0
         self.last_Y = 0
+        self.app_terminate: bool = False
 
         self.images = {}
         self.menu_dropdown: bool = False
+        self.play_trigger: bool = False
         self.is_playing: bool = False
         self.is_paused: bool = False
         self.is_repeat: bool = False
@@ -47,7 +49,8 @@ class App:
         self.is_muted: bool = False
         self.is_full: bool = False
         self.total_songs: int = 0
-        self.current_song_index: int = 0
+        self.current_song_index: int | None = None
+        self.all_entries: [(Label, Label)] = []  # Stores the list of thumbnails and headings of all the entries
 
         self.main_window = Tk()
         self.set_title(self.app_name)
@@ -75,6 +78,7 @@ class App:
         self.thread_event = Event()
 
         self.bindings()
+        Thread(target=self.progress, daemon=True).start()
 
     def run(self):
         self.main_window.mainloop()
@@ -320,6 +324,7 @@ class App:
             frame.bind('<Double-Button-1>', lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t, hd=h))
             thumb.bind('<Button-1>', lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t, hd=h))
 
+            self.all_entries.append((thumb, heading))
             # First entry added to the last_active_entry for thumb and heading change on hitting controller play button
             if i == 0:
                 self.last_active_entry = [(thumb, heading, song['title'])]
@@ -409,14 +414,9 @@ class App:
                 # play button first or hitting the play button after invoking the stop button
                 self.last_active_entry[0][0]['image'] = self.images['thumb_active']
                 self.last_active_entry[0][1]['fg'] = self.color.ascent
-                # Sets the total duration of the currently loaded song and total range of the seek bar
-                self.duration.set(self._get_hms(seconds=self.audio.length()))
-                self.seek_bar.configure(to=self.audio.length())
-                self.audio.play_pause(play_state="PLAY")
-                self.is_playing = True
-                self.current_song_index = 0
-                # Starts the progress thread
-                Thread(target=self._progress).start()
+                self.play_trigger = True
+                if self.current_song_index is None:
+                    self.current_song_index = 0
             elif self.is_paused:
                 self.tgl_play.configure(text="\ue103")
                 self.audio.play_pause(play_state="RESUME")
@@ -429,9 +429,11 @@ class App:
         else:
             self._stop()
             song = self.backend.get_song(song_id)
+            # Getting the current song index from the backend
+            self.current_song_index = self.backend.current_songs.index(song)
             self.audio.load(song['path'])
+            self.play_trigger = True
             self.tgl_play.configure(text="\ue103")
-            self.audio.play_pause("PLAY")
             self.status.set("NOW PLAYING")
             self.title.set(song['title'])
             # Change the thumb and the heading of the currently playing song's entry
@@ -440,40 +442,64 @@ class App:
             # Update both active_entry and last_active_entry with the currently playing song
             self.active_entry = [(element['th'], element['hd'])]
             self.last_active_entry = [(element['th'], element['hd'], song['title'])]
-            # Sets the total duration of the currently loaded song and total range of the seek bar
-            self.duration.set(self._get_hms(seconds=self.audio.length()))
-            self.seek_bar.configure(to=self.audio.length())
-            self.is_playing = True
-            # Starts the progress thread
-            Thread(target=self._progress).start()
 
-    def _progress(self):
-        if self.is_playing:
-            if self.audio.currently_playing():
-                self.elapsed.set(self._get_hms(seconds=self.audio.current_position() / 1000))
-                self.position.set(self.audio.current_position() / 1000)
-                sleep(1)
+    def progress(self):
+        # Until the app gets termination signal, it will loop in the background
+        while not self.app_terminate:
+
+            # If any play button triggers
+            if self.play_trigger:
+                # Sets the total duration of the currently loaded song and total range of the seek bar
+                self.duration.set(self._get_hms(seconds=self.audio.length()))
+                self.seek_bar.configure(to=self.audio.length())
+                # Will play the previously loaded song from _play method
+                self.audio.play_pause(play_state='PLAY')
+
+                self.play_trigger = False
+                self.is_playing = True
             else:
-                if self.position.get() < self.audio.length():
-                    pass
+                # If a song is playing or pausing
+                if self.is_playing:
+                    # When a song is now playing or resuming
+                    if self.audio.currently_playing():
+                        self.elapsed.set(self._get_hms(seconds=self.audio.current_position() / 1000))
+                        self.position.set(self.audio.current_position() / 1000)
+                    else:
+                        # On ending of the current song
+                        if self.audio.current_position() == -1:
+                            self.elapsed.set("00:00:00")
+                            self.position.set(0.0)
+                            self.tgl_play.configure(text="\ue102")
+
+                            # Loads the next song for autoplay if repeat mode if off
+                            if not self.is_repeat:
+                                require = self._load_next_prev('NEXT')
+                                self._play(force_play=True, song_id=require['id'], th=require['entry_thumb'],
+                                           hd=require['entry_heading'])
+                                self.current_song_index += 1
+                        # On pausing a song do nothing
+                        # else: pass
+                # If stop button is fired
                 else:
                     self.elapsed.set("00:00:00")
                     self.position.set(0.0)
                     self.tgl_play.configure(text="\ue102")
-            self._progress()
-        else:
-            self.elapsed.set("00:00:00")
-            self.position.set(0.0)
 
-            self.thread_event.set()  # (Optional) Thread stop signal
-            return None  # Stops the current thread
+            sleep(0.5)
+
+        # Exit the thread on getting termination signal
+        return None
 
     def _control_actions(self, button: Label, action: str):
         match action:
-            case "repeat":
-                self._repeat(element=button)
+            case "previous":
+                self._previous()
             case "stop":
                 self._stop()
+            case "next":
+                self._next()
+            case "repeat":
+                self._repeat(element=button)
 
     def _load_next_prev(self, parameter: Literal["NEXT", "PREV"]):
         if self.current_song_index == 0:  # If it's playing the first song...
@@ -485,18 +511,27 @@ class App:
         else:
             next_index, prev_index = self.current_song_index + 1, self.current_song_index - 1
 
+        # Returns - song_id, element['th'], element['hd']
         match parameter:
             case "NEXT":
-                self.audio.queue(file=self.backend.current_songs[next_index]['path'])
+                return {"id"           : self.backend.current_songs[next_index]["id"],
+                        "entry_thumb"  : self.all_entries[next_index][0],
+                        "entry_heading": self.all_entries[next_index][1]}
             case "PREV":
-                self.audio.queue(file=self.backend.current_songs[prev_index]['path'])
+                return {"id"           : self.backend.current_songs[prev_index]["id"],
+                        "entry_thumb"  : self.all_entries[prev_index][0],
+                        "entry_heading": self.all_entries[prev_index][1]}
 
     def _previous(self):
-        pass
+        required = self._load_next_prev('PREV')
+        self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
+                   hd=required['entry_heading'])
 
     def _stop(self):
         # If a song is currently playing
         if self.is_playing:
+            self.audio.stop()
+            self.is_playing = False
             # If there is an entry in the active_entry list
             try:
                 if self.active_entry[0]:
@@ -513,11 +548,11 @@ class App:
                 self.last_active_entry[0][0]['image'] = self.images['thumb']
                 self.last_active_entry[0][1]['fg'] = self.color.entry_heading_fore
                 self.tgl_play.configure(text="\ue102")
-                self.audio.stop()
-                self.is_playing = False
 
     def _next(self):
-        pass
+        required = self._load_next_prev('NEXT')
+        self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
+                   hd=required['entry_heading'])
 
     def _repeat(self, element: Label):
         if self.is_repeat:
@@ -650,6 +685,7 @@ class App:
     def _close(self):
         self._exit_main_menu()
         self._stop()
+        self.app_terminate = True
         self.audio.unload()
         self.main_window.destroy()
 
@@ -657,3 +693,4 @@ class App:
     @staticmethod
     def _get_hms(seconds: float):
         return strftime("%H:%M:%S", gmtime(seconds))
+
