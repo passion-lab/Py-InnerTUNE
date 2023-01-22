@@ -22,7 +22,7 @@ class Filesystem:
         self.current_folder: PathLike | str = ""
         self.current_files: list | tuple = []
         self.current_songs: list = [
-            # {"id": "", "abs_path": "", "title": "", "artists": "", "album": "", "release": ""},
+            # {"id": "", "path": "", "title": "", "artists": "", "album": "", "release": ""},
         ]
 
     def get_default(self):
