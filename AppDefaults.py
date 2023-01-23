@@ -33,6 +33,11 @@ class ColorDefaults:
                 self.entry_btn_hover_fore = "#5e5e5e"
                 self.entry_btn_active_fore = self.ascent
 
+                self.popup_back = self.head_back
+                self.popup_title_fore = "#121212"
+                self.popup_head_fore = "#3e3e3e"
+                self.popup_option_fore = "#3e3e3e"
+
 
 class FontDefaults:
 
@@ -48,3 +53,6 @@ class FontDefaults:
         self.iconS = ('Segoe UI Symbol', 10)
         self.iconM = ('Segoe UI Symbol', 12)
         self.iconL = ('Segoe UI Symbol', 22)
+        self.popup_title = ('Roboto Condensed', 11)
+        self.popup_head = ('Roboto Condensed Light', 16)
+        self.popup_option = ('Roboto Condensed', 12)
