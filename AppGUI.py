@@ -1,9 +1,9 @@
 # import tkinter
 from tkinter import (
     Tk, Toplevel,
-    Frame, Canvas, Label, Scale,
+    Frame, Canvas, Label, Scale, Radiobutton, Entry,
     PhotoImage, Scrollbar,
-    StringVar, DoubleVar
+    StringVar, DoubleVar, IntVar
 )
 from tkinter.ttk import Sizegrip
 # from tkinter.font import Font
@@ -577,22 +577,46 @@ class App:
         pass
 
     def _timer(self):
+
+        def __on_select():
+            if selected_option.get() == 6:
+                _input.configure(state='normal')
+                _input.focus_set()
+
         if not self.timer_popup:
             self.timer_popup = True
-            self.timer_popup_window = Toplevel(self.main_window, bg=self.color.main_back, highlightthickness=1,
+            self.timer_popup_window = Toplevel(self.main_window, bg=self.color.popup_back, highlightthickness=1,
                                                highlightcolor=self.color.ascent, highlightbackground=self.color.ascent)
 
             bg_frame = Frame(self.timer_popup_window)
             bg_frame.pack(fill='both', expand=True)
-            Label(bg_frame, text=f"{self.app_name} - Sleep Timer", bg=self.color.main_back, fg=self.color.main_fore
-                  ).pack(side='top', fill='x')
+            Label(bg_frame, text=f"{self.app_name} - Sleep Timer", font=self.font.popup_title, bg=self.color.popup_back,
+                  fg=self.color.popup_title_fore, padx=30, pady=20).pack(side='top', fill='x')
+            Label(bg_frame, text=f"Set your timer to exit after:", font=self.font.popup_head, bg=self.color.popup_back,
+                  fg=self.color.popup_head_fore, padx=30, pady=15, anchor='w').pack(fill='x', anchor='w')
+
+            options = ["Finishing the current song", "Completing the current playlist", "5 minutes",
+                       "15 minutes", "30 minutes", "1 hour", "Custom minutes"]
+            selected_option = IntVar()  # Values ranges from 0-6
+            for i, option in enumerate(options):
+                Radiobutton(bg_frame, text=option, font=self.font.popup_option, fg=self.color.popup_option_fore,
+                            bg=self.color.popup_back, value=i, variable=selected_option, pady=2, padx=30, anchor='w',
+                            command=__on_select).pack(fill='x', anchor='w', padx=(10, 0))
+            _input = Entry(bg_frame, font=self.font.popup_option, fg=self.color.popup_option_fore,
+                           bg=self.color.popup_back, relief='solid', borderwidth=0, state='disabled')
+            _input.pack(padx=(40 + 25, 30), pady=(2, 10), anchor='w', fill='x')
+            # Bottom boarder to be fixed
+            # border = Label(bg_frame, height=1, bg=self.color.ascent)
+            # border.pack(fill='x', pady=(0, 10))
+            # border.pack_propagate(False)
 
             self.timer_popup_window.overrideredirect(True)
             self.timer_popup_window.attributes('-alpha', 0.7)
             self.timer_popup_window.attributes('-topmost', True)
-            w1, h1, x1, y1 = self._get_dimension()
+            w1, h1, x1, y1 = self._get_dimension(self.main_window)
             w2, h2, _, _ = self._get_dimension(self.timer_popup_window)
-            self.timer_popup_window.geometry(f"+{x1 + w1 - w2 - 10}+{y1 + 70}")
+            # self.timer_popup_window.geometry(f"+{x1 + w1 - w2 - 10}+{y1 + 70}")
+            self.timer_popup_window.geometry(f"+{int(w1 / 2 - w2 / 2)}+{int(h1 / 2 - h2 / 2)}")
             self.timer_popup_window.bind('<Escape>', lambda e=None: self.timer_popup_window.destroy())
             self.timer_popup_window.mainloop()
         else:
