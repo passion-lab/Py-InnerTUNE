@@ -69,6 +69,7 @@ class App:
         self.make_main_menu()
         self.main_menu_window: Toplevel = ...
         self.menu_dropdown_window: Toplevel
+        self.entry_box_bg: Frame = ...
         self.tgl_play: Label = ...
         self.tgl_mute: Label = ...
         self.tgl_full: Label = ...
@@ -277,6 +278,7 @@ class App:
         bg_canvas.pack(side='left', fill='both', expand=True)
         vsb.pack(side='right', fill='y')
 
+        self.entry_box_bg = bg_frame
         return entry_box
 
     def make_song_list(self, songs: list[dict]):
@@ -653,12 +655,12 @@ class App:
         done = self.backend.open_files(title=f"{self.app_name} - Select music files you want to play with")
         if done:
             try:
-                self.entry_box.winfo_children()[0].pack_forget()  # First clear the existing entry
-            except:
-                pass
+                self.entry_box_bg.pack_forget()  # First clear the existing entry
+            except: pass
             finally:
                 self.make_song_list(self.backend.get_current_songs())  # Then, make new entries
                 self.audio.load(file=self.backend.get_current_songs()[0]['path'])
+                print(self.backend.current_songs)
 
     def _open_folder(self):
         self._exit_main_menu()
@@ -666,12 +668,12 @@ class App:
         done = self.backend.open_folder(title=f"{self.app_name} - Choose a folder contains music to open with")
         if done:
             try:
-                self.entry_box.winfo_children()[0].pack_forget()  # First clear the existing entry
-            except:
-                pass
+                self.entry_box_bg.pack_forget()  # First clear the existing entry
+            except: pass
             finally:
                 self.make_song_list(self.backend.get_current_songs())  # Then, make new entries
                 self.audio.load(file=self.backend.get_current_songs()[0]['path'])
+                print(self.backend.current_songs)
 
     def _scan_filesystem(self):
         self._exit_main_menu()
