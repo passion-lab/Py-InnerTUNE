@@ -39,6 +39,7 @@ class App:
 
         self.images = {}
         self.menu_dropdown: bool = False
+        self.timer_popup: bool = False
         self.play_trigger: bool = False
         self.is_playing: bool = False
         self.is_paused: bool = False
@@ -69,6 +70,7 @@ class App:
         self.make_main_menu()
         self.main_menu_window: Toplevel = ...
         self.menu_dropdown_window: Toplevel
+        self.timer_popup_window: Toplevel = ...
         self.entry_box_bg: Frame = ...
         self.tgl_play: Label = ...
         self.tgl_mute: Label = ...
@@ -502,6 +504,8 @@ class App:
                 self._next()
             case "repeat":
                 self._repeat(element=button)
+            case "timer":
+                self._timer()
 
     def _load_next_prev(self, parameter: Literal["NEXT", "PREV"]):
         if self.current_song_index == 0:  # If it's playing the first song...
@@ -573,7 +577,27 @@ class App:
         pass
 
     def _timer(self):
-        pass
+        if not self.timer_popup:
+            self.timer_popup = True
+            self.timer_popup_window = Toplevel(self.main_window, bg=self.color.main_back, highlightthickness=1,
+                                               highlightcolor=self.color.ascent, highlightbackground=self.color.ascent)
+
+            bg_frame = Frame(self.timer_popup_window)
+            bg_frame.pack(fill='both', expand=True)
+            Label(bg_frame, text=f"{self.app_name} - Sleep Timer", bg=self.color.main_back, fg=self.color.main_fore
+                  ).pack(side='top', fill='x')
+
+            self.timer_popup_window.overrideredirect(True)
+            self.timer_popup_window.attributes('-alpha', 0.7)
+            self.timer_popup_window.attributes('-topmost', True)
+            w1, h1, x1, y1 = self._get_dimension()
+            w2, h2, _, _ = self._get_dimension(self.timer_popup_window)
+            self.timer_popup_window.geometry(f"+{x1 + w1 - w2 - 10}+{y1 + 70}")
+            self.timer_popup_window.bind('<Escape>', lambda e=None: self.timer_popup_window.destroy())
+            self.timer_popup_window.mainloop()
+        else:
+            self.timer_popup_window.destroy()
+            self.timer_popup = False
 
     def _seek(self, e=None):
         position = self.position.get()
