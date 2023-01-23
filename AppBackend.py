@@ -2,8 +2,13 @@
 
 # from tkinter import Frame
 from io import BytesIO
+from builtins import callable
+from threading import Thread
+from time import sleep
 from tkinter.filedialog import askopenfilenames, askdirectory
 from random import randint, random
+# from typing import Literal
+
 from PIL import ImageTk, Image
 from mutagen.id3 import ID3
 from os import curdir, listdir, getenv, PathLike, chdir, environ
@@ -170,6 +175,41 @@ class AudioPlayer:
                 mixer.music.set_volume(1.0)
             case "VOL":
                 mixer.music.set_volume(level)
+
+
+class SleepTimer:
+    from datetime import time, datetime
+    from typing import Literal
+
+    def __init__(self):
+        self.current_time = ""
+        self.timer_switch: bool = False
+
+    def add_new_timer(self, time):
+        self.current_time = time
+
+    def turn_switch_timer(self, switch: Literal["ON", "OFF"], termination_func=...):
+        match switch:
+            case "ON":
+                if not callable(termination_func):
+                    raise TypeError("Termination function not defined/callable!\n"
+                                    "A name of a callable termination function or a lambda function "
+                                    "must have to specify upon turning the timer switch ON.")
+                self.timer_switch = True
+                Thread(target=self.start_timer, args=(termination_func,), daemon=True)
+            case "OFF":
+                self.timer_switch = False
+
+    def start_timer(self, func):
+        while self.timer_switch:
+            # TODO: Timer function have to add
+            # Runs the termination function on TIME UP
+            func()
+
+            sleep(1)
+
+        # Return None for the interrupting the current timer and terminate the thread
+        return None
 
 
 if __name__ == '__main__':
