@@ -660,7 +660,6 @@ class App:
             finally:
                 self.make_song_list(self.backend.get_current_songs())  # Then, make new entries
                 self.audio.load(file=self.backend.get_current_songs()[0]['path'])
-                print(self.backend.current_songs)
 
     def _open_folder(self):
         self._exit_main_menu()
@@ -673,7 +672,6 @@ class App:
             finally:
                 self.make_song_list(self.backend.get_current_songs())  # Then, make new entries
                 self.audio.load(file=self.backend.get_current_songs()[0]['path'])
-                print(self.backend.current_songs)
 
     def _scan_filesystem(self):
         self._exit_main_menu()
