@@ -10,6 +10,9 @@ class ColorDefaults:
 
         match self.theme:
             case "white":
+                self.disabled = "#c7c7c7"
+                self.enabled = self.ascent
+
                 self.main_back = "white"
                 self.main_fore = "black"
 
@@ -37,6 +40,8 @@ class ColorDefaults:
                 self.popup_title_fore = "#121212"
                 self.popup_head_fore = "#3e3e3e"
                 self.popup_option_fore = "#3e3e3e"
+                self.popup_option_hover = "#c8c8c8"
+                self.popup_option_select = self.main_back
 
 
 class FontDefaults:
@@ -53,6 +58,6 @@ class FontDefaults:
         self.iconS = ('Segoe UI Symbol', 10)
         self.iconM = ('Segoe UI Symbol', 12)
         self.iconL = ('Segoe UI Symbol', 22)
-        self.popup_title = ('Roboto Condensed', 11)
+        self.popup_title = ('Roboto Condensed Bold', 11)
         self.popup_head = ('Roboto Condensed Light', 16)
         self.popup_option = ('Roboto Condensed', 12)
