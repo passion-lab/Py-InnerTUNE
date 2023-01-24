@@ -49,6 +49,7 @@ class App:
         self.active_controls: list[Label] = []
         self.is_muted: bool = False
         self.is_full: bool = False
+        self.is_timer: bool = False
         self.total_songs: int = 0
         self.current_song_index: int | None = None
         self.all_entries: [(Label, Label)] = []  # Stores the list of thumbnails and headings of all the entries
@@ -584,8 +585,13 @@ class App:
 
     def _timer(self):
 
+        def __close_timer_window():
+            self.timer_popup_window.destroy()
+            self.timer_popup = False
+
         def __on_select():
-            if selected_option.get() == 6:
+            # If
+            if selected_option.get() == 123:
                 _input.configure(state='normal')
                 _input.focus_set()
                 _cnv.configure(bg=self.color.enabled)
@@ -598,10 +604,12 @@ class App:
         def __switch_off():
             _switch.configure(image=self.images['toggle_off'])
             _switch.bind('<Button-1>', lambda e=None: __switch_on())
+            self.is_timer = False
 
         def __switch_on():
             _switch.configure(image=self.images['toggle_on'])
             _switch.bind('<Button-1>', lambda e=None: __switch_off())
+            self.is_timer = True
 
         if not self.timer_popup:
             self.timer_popup = True
@@ -610,19 +618,22 @@ class App:
 
             bg_frame = Frame(self.timer_popup_window, bg=self.color.popup_back)
             bg_frame.pack(fill='both', expand=True)
-            Label(bg_frame, text=f"{self.app_name} - Sleep Timer", font=self.font.popup_title, bg=self.color.ascent,
-                  fg=self.color.popup_title_fore, padx=30, pady=20).pack(side='top', fill='x')
+            _ttl = Label(bg_frame, text=f"{self.app_name} - Sleep Timer", font=self.font.popup_title,
+                         bg=self.color.ascent, fg=self.color.popup_title_fore, padx=30, pady=20)
+            _ttl.pack(side='top', fill='x')
+            # _ttl.bind('<Button-1>', lambda e=None: __close_timer_window())
+            _ttl.bind('<Double-Button-1>', lambda e=None: __close_timer_window())
             Label(bg_frame, text=f"Set your timer to exit after:", font=self.font.popup_head, bg=self.color.popup_back,
                   fg=self.color.popup_head_fore, padx=30, pady=15, anchor='w').pack(fill='x', anchor='w')
 
-            options = ["Finishing the current song", "Completing the current playlist", "5 minutes",
-                       "15 minutes", "30 minutes", "1 hour", "Custom minutes"]
-            selected_option = IntVar()  # Values ranges from 0-6
-            for i, option in enumerate(options):
-                _rd = Radiobutton(bg_frame, text=option, font=self.font.popup_option, fg=self.color.popup_option_fore, border=0,
-                            image=self.images['radio_inactive'], selectimage=self.images['radio_active'], compound='left', indicatoron=False,
-                            bg=self.color.popup_back, value=i, variable=selected_option, pady=2, padx=15, anchor='w',
-                            command=__on_select)
+            options = [("Finishing the current song", 1), ("Completing the current playlist", 2), ("5 minutes", 5),
+                       ("15 minutes", 15), ("30 minutes", 30), ("1 hour", 60), ("Custom minutes", 123)]
+            selected_option = IntVar()  # Values are 1, 2, 5, 15, 30, 60 & 123
+            for option in options:
+                _rd = Radiobutton(bg_frame, text=option[0], font=self.font.popup_option, fg=self.color.popup_option_fore,
+                                  border=0, image=self.images['radio_inactive'], selectimage=self.images['radio_active'],
+                                  compound='left', indicatoron=False, bg=self.color.popup_back, value=option[1],
+                                  variable=selected_option, pady=2, padx=15, anchor='w', command=__on_select)
                 _rd.pack(fill='x', anchor='w', padx=30)
                 _rd.bind('<Enter>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_option_hover, image=self.images['radio_hover']))
                 _rd.bind('<Leave>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_back, image=self.images['radio_inactive']))
@@ -631,9 +642,9 @@ class App:
             _input.pack(padx=(40 + 45, 30), pady=(4, 0), anchor='w', fill='x')
             _cnv = Canvas(bg_frame, bg=self.color.disabled, height=1, width=100, borderwidth=0, highlightthickness=0)
             _cnv.pack(padx=(40 + 45, 30), pady=(0, 15), anchor='w')
-            _switch = Label(bg_frame, image=self.images['toggle_off'], bg=self.color.popup_back, )
+            _switch = Label(bg_frame, image=self.images['toggle_off'] if not self.is_timer else self.images['toggle_on'], bg=self.color.popup_back, )
             _switch.pack(padx=30, pady=15)
-            _switch.bind('<Button-1>', lambda e=None: __switch_on())
+            _switch.bind('<Button-1>', lambda e=None: __switch_on() if not self.is_timer else __switch_off())
 
             self.timer_popup_window.overrideredirect(True)
             self.timer_popup_window.attributes('-alpha', 0.7)
@@ -645,8 +656,7 @@ class App:
             self.timer_popup_window.bind('<Escape>', lambda e=None: self.timer_popup_window.destroy())
             self.timer_popup_window.mainloop()
         else:
-            self.timer_popup_window.destroy()
-            self.timer_popup = False
+            __close_timer_window()
 
     def _seek(self, e=None):
         position = self.position.get()
