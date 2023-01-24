@@ -101,6 +101,9 @@ class App:
         self.images["thumb"] = ImageTk.PhotoImage(Image.open(image_dir + 'thumb.png'))
         self.images["thumb_hover"] = ImageTk.PhotoImage(Image.open(image_dir + 'thumb_hover.png'))
         self.images["thumb_active"] = ImageTk.PhotoImage(Image.open(image_dir + 'thumb_active.png'))
+        self.images["radio_active"] = ImageTk.PhotoImage(Image.open(image_dir + 'radio_active.png'))
+        self.images["radio_inactive"] = ImageTk.PhotoImage(Image.open(image_dir + 'radio_inactive.png'))
+        self.images["radio_hover"] = ImageTk.PhotoImage(Image.open(image_dir + 'radio_hover.png'))
 
     def bindings(self):
         self.header_bg.bind('<Button-1>', self._save_last_click)
@@ -582,15 +585,16 @@ class App:
             if selected_option.get() == 6:
                 _input.configure(state='normal')
                 _input.focus_set()
+                _cnv.configure(bg=self.color.enabled)
 
         if not self.timer_popup:
             self.timer_popup = True
             self.timer_popup_window = Toplevel(self.main_window, bg=self.color.popup_back, highlightthickness=1,
                                                highlightcolor=self.color.ascent, highlightbackground=self.color.ascent)
 
-            bg_frame = Frame(self.timer_popup_window)
+            bg_frame = Frame(self.timer_popup_window, bg=self.color.popup_back)
             bg_frame.pack(fill='both', expand=True)
-            Label(bg_frame, text=f"{self.app_name} - Sleep Timer", font=self.font.popup_title, bg=self.color.popup_back,
+            Label(bg_frame, text=f"{self.app_name} - Sleep Timer", font=self.font.popup_title, bg=self.color.ascent,
                   fg=self.color.popup_title_fore, padx=30, pady=20).pack(side='top', fill='x')
             Label(bg_frame, text=f"Set your timer to exit after:", font=self.font.popup_head, bg=self.color.popup_back,
                   fg=self.color.popup_head_fore, padx=30, pady=15, anchor='w').pack(fill='x', anchor='w')
@@ -599,16 +603,18 @@ class App:
                        "15 minutes", "30 minutes", "1 hour", "Custom minutes"]
             selected_option = IntVar()  # Values ranges from 0-6
             for i, option in enumerate(options):
-                Radiobutton(bg_frame, text=option, font=self.font.popup_option, fg=self.color.popup_option_fore,
-                            bg=self.color.popup_back, value=i, variable=selected_option, pady=2, padx=30, anchor='w',
-                            command=__on_select).pack(fill='x', anchor='w', padx=(10, 0))
-            _input = Entry(bg_frame, font=self.font.popup_option, fg=self.color.popup_option_fore,
+                _rd = Radiobutton(bg_frame, text=option, font=self.font.popup_option, fg=self.color.popup_option_fore, border=0,
+                            image=self.images['radio_inactive'], selectimage=self.images['radio_active'], compound='left', indicatoron=False,
+                            bg=self.color.popup_back, value=i, variable=selected_option, pady=2, padx=15, anchor='w',
+                            command=__on_select)
+                _rd.pack(fill='x', anchor='w', padx=30)
+                _rd.bind('<Enter>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_option_hover, image=self.images['radio_hover']))
+                _rd.bind('<Leave>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_back, image=self.images['radio_inactive']))
+            _input = Entry(bg_frame, font=self.font.popup_option, fg=self.color.popup_option_fore, disabledbackground=self.color.popup_back,
                            bg=self.color.popup_back, relief='solid', borderwidth=0, state='disabled')
-            _input.pack(padx=(40 + 25, 30), pady=(2, 10), anchor='w', fill='x')
-            # Bottom boarder to be fixed
-            # border = Label(bg_frame, height=1, bg=self.color.ascent)
-            # border.pack(fill='x', pady=(0, 10))
-            # border.pack_propagate(False)
+            _input.pack(padx=(40 + 45, 30), pady=(4, 0), anchor='w', fill='x')
+            _cnv = Canvas(bg_frame, bg=self.color.disabled, height=1, width=100, borderwidth=0, highlightthickness=0)
+            _cnv.pack(padx=(40 + 45, 30), pady=(0, 10), anchor='w')
 
             self.timer_popup_window.overrideredirect(True)
             self.timer_popup_window.attributes('-alpha', 0.7)
