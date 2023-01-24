@@ -94,6 +94,7 @@ class App:
         self.main_window.geometry(f"{w}x{h}+{int(x)}+{int(y)}")
 
     def load_files(self):
+        # TODO: Images that are theme specified, should be placed under AppDefaults.py within an independent class
         image_dir = "./Assets/images/"
         self.images["menu_button_inactive"] = PhotoImage(file=image_dir + 'menu_button_inactive.png')
         self.images["menu_button_active"] = PhotoImage(file=image_dir + 'menu_button_active.png')
@@ -104,6 +105,8 @@ class App:
         self.images["radio_active"] = ImageTk.PhotoImage(Image.open(image_dir + 'radio_active.png'))
         self.images["radio_inactive"] = ImageTk.PhotoImage(Image.open(image_dir + 'radio_inactive.png'))
         self.images["radio_hover"] = ImageTk.PhotoImage(Image.open(image_dir + 'radio_hover.png'))
+        self.images["toggle_on"] = ImageTk.PhotoImage(Image.open(image_dir + 'toggle_on.png'))
+        self.images["toggle_off"] = ImageTk.PhotoImage(Image.open(image_dir + 'toggle_off.png'))
 
     def bindings(self):
         self.header_bg.bind('<Button-1>', self._save_last_click)
@@ -586,6 +589,19 @@ class App:
                 _input.configure(state='normal')
                 _input.focus_set()
                 _cnv.configure(bg=self.color.enabled)
+            else:
+                _input.configure(state='disabled')
+                _input.focus_get()
+                _cnv.configure(bg=self.color.disabled)
+                __switch_on()
+
+        def __switch_off():
+            _switch.configure(image=self.images['toggle_off'])
+            _switch.bind('<Button-1>', lambda e=None: __switch_on())
+
+        def __switch_on():
+            _switch.configure(image=self.images['toggle_on'])
+            _switch.bind('<Button-1>', lambda e=None: __switch_off())
 
         if not self.timer_popup:
             self.timer_popup = True
@@ -614,7 +630,10 @@ class App:
                            bg=self.color.popup_back, relief='solid', borderwidth=0, state='disabled')
             _input.pack(padx=(40 + 45, 30), pady=(4, 0), anchor='w', fill='x')
             _cnv = Canvas(bg_frame, bg=self.color.disabled, height=1, width=100, borderwidth=0, highlightthickness=0)
-            _cnv.pack(padx=(40 + 45, 30), pady=(0, 10), anchor='w')
+            _cnv.pack(padx=(40 + 45, 30), pady=(0, 15), anchor='w')
+            _switch = Label(bg_frame, image=self.images['toggle_off'], bg=self.color.popup_back, )
+            _switch.pack(padx=30, pady=15)
+            _switch.bind('<Button-1>', lambda e=None: __switch_on())
 
             self.timer_popup_window.overrideredirect(True)
             self.timer_popup_window.attributes('-alpha', 0.7)
