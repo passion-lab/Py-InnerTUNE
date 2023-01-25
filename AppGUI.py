@@ -49,7 +49,8 @@ class App:
         self.active_controls: list[Label] = []
         self.is_muted: bool = False
         self.is_full: bool = False
-        self.is_timer: bool = False
+        # If timer is ON, and it's custom minutes, then 2nd index will be the minutes [OFF/ON, 0/1/2/5/15/30/60/123, _]
+        self.is_timer: [bool, int] or [bool, int, int] = [False, 0]
         self.total_songs: int = 0
         self.current_song_index: int | None = None
         self.all_entries: [(Label, Label)] = []  # Stores the list of thumbnails and headings of all the entries
@@ -590,26 +591,31 @@ class App:
             self.timer_popup = False
 
         def __on_select():
-            # If
+            # If the custom minutes option is selected
             if selected_option.get() == 123:
                 _input.configure(state='normal')
                 _input.focus_set()
                 _cnv.configure(bg=self.color.enabled)
             else:
+                _switch.configure(state='normal')
+                _switch.bind('<Button-1>', lambda e=None: __switch_on())
                 _input.configure(state='disabled')
                 _input.focus_get()
                 _cnv.configure(bg=self.color.disabled)
-                __switch_on()
 
         def __switch_off():
             _switch.configure(image=self.images['toggle_off'])
             _switch.bind('<Button-1>', lambda e=None: __switch_on())
-            self.is_timer = False
+            selected_option.set(0)  # For deselect the options
+            _input.insert(0, "")
+            self.is_timer = [False, 0]
 
         def __switch_on():
             _switch.configure(image=self.images['toggle_on'])
             _switch.bind('<Button-1>', lambda e=None: __switch_off())
-            self.is_timer = True
+            self.is_timer = [True, selected_option.get()]
+            if selected_option.get() == 123:
+                self.is_timer[2] = int(_input.get())
 
         if not self.timer_popup:
             self.timer_popup = True
@@ -642,9 +648,13 @@ class App:
             _input.pack(padx=(40 + 45, 30), pady=(4, 0), anchor='w', fill='x')
             _cnv = Canvas(bg_frame, bg=self.color.disabled, height=1, width=100, borderwidth=0, highlightthickness=0)
             _cnv.pack(padx=(40 + 45, 30), pady=(0, 15), anchor='w')
-            _switch = Label(bg_frame, image=self.images['toggle_off'] if not self.is_timer else self.images['toggle_on'], bg=self.color.popup_back, )
+            _switch = Label(bg_frame, image=self.images['toggle_off'] if not self.is_timer[0] else self.images['toggle_on'], bg=self.color.popup_back, state='disabled')
             _switch.pack(padx=30, pady=15)
-            _switch.bind('<Button-1>', lambda e=None: __switch_on() if not self.is_timer else __switch_off())
+            if self.is_timer[0]:
+                _switch.configure(state='normal')
+                _switch.bind('<Button-1>', lambda e=None: __switch_off())
+                selected_option.set(self.is_timer[1])
+                _input.insert(0, str(self.is_timer[2])) if len(self.is_timer) == 3 else None
 
             self.timer_popup_window.overrideredirect(True)
             self.timer_popup_window.attributes('-alpha', 0.7)
