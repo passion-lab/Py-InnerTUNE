@@ -594,6 +594,7 @@ class App:
             # If the custom minutes option is selected
             if selected_option.get() == 123:
                 _input.configure(state='normal')
+                _switch.configure(state='disabled')
                 _input.focus_set()
                 _cnv.configure(bg=self.color.enabled)
             else:
@@ -603,11 +604,28 @@ class App:
                 _input.focus_get()
                 _cnv.configure(bg=self.color.disabled)
 
+        def __input_validation(inp: str):
+            # inp = Default event argument (entry text in this case)
+            if inp == "":
+                _switch.configure(state='disabled')
+                _switch.bind('<Button-1>', lambda e=None: None)
+
+            if inp.isdigit():
+                _switch.configure(state='normal')
+                _switch.bind('<Button-1>', lambda e=None: __switch_on())
+                return True
+            elif inp == "":
+                return True
+            else:
+                return False
+
         def __switch_off():
+            selected_option.set(0)  # For deselect the options
+            entered_value.set("")
+            _input.configure(state='disabled')
+            _cnv.configure(bg=self.color.disabled)
             _switch.configure(image=self.images['toggle_off'])
             _switch.bind('<Button-1>', lambda e=None: __switch_on())
-            selected_option.set(0)  # For deselect the options
-            _input.insert(0, "")
             self.is_timer = [False, 0]
 
         def __switch_on():
@@ -615,7 +633,7 @@ class App:
             _switch.bind('<Button-1>', lambda e=None: __switch_off())
             self.is_timer = [True, selected_option.get()]
             if selected_option.get() == 123:
-                self.is_timer[2] = int(_input.get())
+                self.is_timer.insert(2, int(entered_value.get()))
 
         if not self.timer_popup:
             self.timer_popup = True
@@ -635,6 +653,7 @@ class App:
             options = [("Finishing the current song", 1), ("Completing the current playlist", 2), ("5 minutes", 5),
                        ("15 minutes", 15), ("30 minutes", 30), ("1 hour", 60), ("Custom minutes", 123)]
             selected_option = IntVar()  # Values are 1, 2, 5, 15, 30, 60 & 123
+            entered_value = StringVar()
             for option in options:
                 _rd = Radiobutton(bg_frame, text=option[0], font=self.font.popup_option, fg=self.color.popup_option_fore,
                                   border=0, image=self.images['radio_inactive'], selectimage=self.images['radio_active'],
@@ -644,17 +663,19 @@ class App:
                 _rd.bind('<Enter>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_option_hover, image=self.images['radio_hover']))
                 _rd.bind('<Leave>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_back, image=self.images['radio_inactive']))
             _input = Entry(bg_frame, font=self.font.popup_option, fg=self.color.popup_option_fore, disabledbackground=self.color.popup_back,
-                           bg=self.color.popup_back, relief='solid', borderwidth=0, state='disabled')
+                           bg=self.color.popup_back, relief='solid', borderwidth=0, state='disabled', textvariable=entered_value, width=3)
             _input.pack(padx=(40 + 45, 30), pady=(4, 0), anchor='w', fill='x')
+            _reg_val_func = self.timer_popup_window.register(__input_validation)
+            _input.configure(validate='key', validatecommand=(_reg_val_func, '%P'))
             _cnv = Canvas(bg_frame, bg=self.color.disabled, height=1, width=100, borderwidth=0, highlightthickness=0)
             _cnv.pack(padx=(40 + 45, 30), pady=(0, 15), anchor='w')
             _switch = Label(bg_frame, image=self.images['toggle_off'] if not self.is_timer[0] else self.images['toggle_on'], bg=self.color.popup_back, state='disabled')
             _switch.pack(padx=30, pady=15)
             if self.is_timer[0]:
+                selected_option.set(self.is_timer[1])
+                entered_value.set(str(self.is_timer[2])) if len(self.is_timer) == 3 else None
                 _switch.configure(state='normal')
                 _switch.bind('<Button-1>', lambda e=None: __switch_off())
-                selected_option.set(self.is_timer[1])
-                _input.insert(0, str(self.is_timer[2])) if len(self.is_timer) == 3 else None
 
             self.timer_popup_window.overrideredirect(True)
             self.timer_popup_window.attributes('-alpha', 0.7)
