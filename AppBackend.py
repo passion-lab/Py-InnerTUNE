@@ -7,7 +7,6 @@ from threading import Thread
 from time import sleep
 from tkinter.filedialog import askopenfilenames, askdirectory
 from random import randint, random
-# from typing import Literal
 
 from PIL import ImageTk, Image
 from mutagen.id3 import ID3
@@ -182,11 +181,11 @@ class SleepTimer:
     from typing import Literal
 
     def __init__(self):
-        self.current_time = ""
+        self.current_time: int = 0
         self.timer_switch: bool = False
 
-    def add_new_timer(self, time):
-        self.current_time = time
+    def add_new_timer(self, minutes: int):
+        self.current_time = minutes * 60
 
     def turn_switch_timer(self, switch: Literal["ON", "OFF"], termination_func=...):
         match switch:
@@ -196,28 +195,30 @@ class SleepTimer:
                                     "A name of a callable termination function or a lambda function "
                                     "must have to specify upon turning the timer switch ON.")
                 self.timer_switch = True
-                Thread(target=self.start_timer, args=(termination_func,), daemon=True)
+                Thread(target=self.start_timer, args=(termination_func,), daemon=True).start()
             case "OFF":
+                self.current_time = 0
                 self.timer_switch = False
 
     def start_timer(self, func):
+        countdown_time = self.current_time
+
         while self.timer_switch:
             # TODO: Timer function have to add
-            # Runs the termination function on TIME UP
-            func()
-
+            if countdown_time > 0:
+                countdown_time -= 1
+            else:
+                self.current_time = 0
+                self.timer_switch = False
+                # Runs the termination function on TIME UP
+                func()
             sleep(1)
 
+        self.current_time = 0
         # Return None for the interrupting the current timer and terminate the thread
         return None
 
 
 if __name__ == '__main__':
-    ab = Filesystem()
-    ab.open_files()
-    # ab.open_folder()
-    print(ab.get_current_folder())
-    print(ab.get_current_files())
-    print(ab.get_current_songs())
-
-    ad = AudioPlayer()
+    # For testing purposes
+    pass
