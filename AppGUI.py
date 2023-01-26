@@ -484,7 +484,15 @@ class App:
                             self.position.set(0.0)
                             self.tgl_play.configure(text="\ue102")
 
-                            # Loads the next song for autoplay if repeat mode if off
+                            # Exit the app if the timer set to finishing the current song (1st option)
+                            if self.is_timer[0] and self.is_timer[1] == 1:
+                                self._close()
+                            # Exit the app if the timer set to completing the current playlist (2nd option)
+                            if self.current_song_index == self.total_songs - 1:
+                                if self.is_timer[0] and self.is_timer[1] == 2:
+                                    self._close()
+
+                            # Otherwise loads the next song for autoplay if repeat mode is off
                             if not self.is_repeat:
                                 require = self._load_next_prev('NEXT')
                                 self._play(force_play=True, song_id=require['id'], th=require['entry_thumb'],
@@ -595,11 +603,11 @@ class App:
             # If the custom minutes option is selected
             if selected_option.get() == 123:
                 _input.configure(state='normal')
-                _switch.configure(state='disabled')
+                _switch.configure(state='disabled', cursor='arrow')
                 _input.focus_set()
                 _cnv.configure(bg=self.color.enabled)
             else:
-                _switch.configure(state='normal')
+                _switch.configure(state='normal', cursor='hand2')
                 _switch.bind('<Button-1>', lambda e=None: __switch_on())
                 _input.configure(state='disabled')
                 _input.focus_get()
@@ -608,11 +616,11 @@ class App:
         def __input_validation(inp: str):
             # inp = Default event argument (entry text in this case)
             if inp == "":
-                _switch.configure(state='disabled')
+                _switch.configure(state='disabled', cursor='arrow')
                 _switch.bind('<Button-1>', lambda e=None: None)
 
             if inp.isdigit():
-                _switch.configure(state='normal')
+                _switch.configure(state='normal', cursor='hand2')
                 _switch.bind('<Button-1>', lambda e=None: __switch_on())
                 return True
             elif inp == "":
@@ -625,8 +633,7 @@ class App:
             entered_value.set("")
             _input.configure(state='disabled')
             _cnv.configure(bg=self.color.disabled)
-            _switch.configure(image=self.images['toggle_off'])
-            _switch.bind('<Button-1>', lambda e=None: __switch_on())
+            _switch.configure(image=self.images['toggle_off'], state='disabled', cursor='arrow')
             self.is_timer = [False, 0]
             self.timer.turn_switch_timer('OFF')
 
@@ -638,10 +645,12 @@ class App:
             if selected_option.get() == 123:
                 self.is_timer.insert(2, int(entered_value.get()))
                 self.timer.add_new_timer(int(entered_value.get()))
+                self.timer.turn_switch_timer('ON', self._close)
             elif selected_option.get() in [5, 15, 30, 60]:
                 self.timer.add_new_timer(selected_option.get())
-            self.timer.turn_switch_timer('ON', self._close)
+                self.timer.turn_switch_timer('ON', self._close)
 
+        # App sleep timer window
         if not self.timer_popup:
             self.timer_popup = True
             self.timer_popup_window = Toplevel(self.main_window, bg=self.color.popup_back, highlightthickness=1,
@@ -657,6 +666,7 @@ class App:
             Label(bg_frame, text=f"Set your timer to exit after:", font=self.font.popup_head, bg=self.color.popup_back,
                   fg=self.color.popup_head_fore, padx=30, pady=15, anchor='w').pack(fill='x', anchor='w')
 
+            # Radio button options and their respective values
             options = [("Finishing the current song", 1), ("Completing the current playlist", 2), ("5 minutes", 5),
                        ("15 minutes", 15), ("30 minutes", 30), ("1 hour", 60), ("Custom minutes", 123)]
             selected_option = IntVar()  # Values are 1, 2, 5, 15, 30, 60 & 123
@@ -681,7 +691,7 @@ class App:
             if self.is_timer[0]:
                 selected_option.set(self.is_timer[1])
                 entered_value.set(str(self.is_timer[2])) if len(self.is_timer) == 3 else None
-                _switch.configure(state='normal')
+                _switch.configure(state='normal', cursor='hand2')
                 _switch.bind('<Button-1>', lambda e=None: __switch_off())
 
             self.timer_popup_window.overrideredirect(True)
