@@ -712,12 +712,11 @@ class App:
                 _switch.bind('<Button-1>', lambda e=None: __switch_off())
 
             self.timer_popup_window.overrideredirect(True)
-            self.timer_popup_window.attributes('-alpha', 0.7)
+            self.timer_popup_window.attributes('-alpha', 0.8)
             self.timer_popup_window.attributes('-topmost', True)
             w1, h1, x1, y1 = self._get_dimension(self.main_window)
             w2, h2, _, _ = self._get_dimension(self.timer_popup_window)
-            # self.timer_popup_window.geometry(f"+{x1 + w1 - w2 - 10}+{y1 + 70}")
-            self.timer_popup_window.geometry(f"+{int(w1 / 2 - w2 / 2)}+{int(h1 / 2 - h2 / 2)}")
+            self.timer_popup_window.geometry(f"+{x1 + w1 // 2 - w2 // 2}+{y1 + h1 // 2 - h2 // 2}")
             self.timer_popup_window.bind('<Escape>', lambda e=None: self.timer_popup_window.destroy())
             self.timer_popup_window.mainloop()
         else:
