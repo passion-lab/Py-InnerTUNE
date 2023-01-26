@@ -45,6 +45,7 @@ class App:
         self.is_playing: bool = False
         self.is_paused: bool = False
         self.is_repeat: bool = False
+        self.is_shuffled: bool = False
         self.active_entry: [(Label, Label)] = []
         self.last_active_entry: [(Label, Label, str)] = []
         self.active_controls: list[Label] = []
@@ -54,7 +55,8 @@ class App:
         self.is_timer: [bool, int] or [bool, int, int] = [False, 0]
         self.total_songs: int = 0
         self.current_song_index: int | None = None
-        self.all_entries: [(Label, Label)] = []  # Stores the list of thumbnails and headings of all the entries
+        # Stores the list of thumbnails and headings of all the entries in respect of their IDs (song ID)
+        self.all_entries: {int: (Label, Label)} = {}  # [{id1: (thumb1, title1)}, {id2: (thumb2, title2)}, ...]
 
         self.main_window = Tk()
         self.set_title(self.app_name)
@@ -337,7 +339,8 @@ class App:
             frame.bind('<Double-Button-1>', lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t, hd=h))
             thumb.bind('<Button-1>', lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t, hd=h))
 
-            self.all_entries.append((thumb, heading))
+            # Thumb and Titles of all entries with respect of their IDs adds to the all_entries dictionary
+            self.all_entries[song['id']] = (thumb, heading)
             # First entry added to the last_active_entry for thumb and heading change on hitting controller play button
             if i == 0:
                 self.last_active_entry = [(thumb, heading, song['title'])]
@@ -522,7 +525,7 @@ class App:
             case "repeat":
                 self._repeat(element=button)
             case "shuffle":
-                self._shuffle()
+                self._shuffle(element=button)
             case "timer":
                 self._timer(element=button)
 
@@ -539,13 +542,15 @@ class App:
         # Returns - song_id, element['th'], element['hd']
         match parameter:
             case "NEXT":
-                return {"id"           : self.backend.current_songs[next_index]["id"],
-                        "entry_thumb"  : self.all_entries[next_index][0],
-                        "entry_heading": self.all_entries[next_index][1]}
+                _id = self.backend.current_songs[next_index]["id"]
+                return {"id"           : _id,
+                        "entry_thumb"  : self.all_entries[_id][0],
+                        "entry_heading": self.all_entries[_id][1]}
             case "PREV":
-                return {"id"           : self.backend.current_songs[prev_index]["id"],
-                        "entry_thumb"  : self.all_entries[prev_index][0],
-                        "entry_heading": self.all_entries[prev_index][1]}
+                _id = self.backend.current_songs[prev_index]["id"]
+                return {"id"           : _id,
+                        "entry_thumb"  : self.all_entries[_id][0],
+                        "entry_heading": self.all_entries[_id][1]}
 
     def _previous(self):
         required = self._load_next_prev('PREV')
@@ -589,8 +594,15 @@ class App:
             self._set_control(element, will_set=True)
             self.is_repeat = True
 
-    def _shuffle(self):
-        pass
+    def _shuffle(self, element: Label):
+        if self.is_shuffled:
+            self._set_control(element, will_set=False)
+            self.backend.make_shuffle(False)
+            self.is_shuffled = False
+        else:
+            self._set_control(element, will_set=True)
+            self.backend.make_shuffle(True)
+            self.is_shuffled = True
 
     def _que(self):
         pass
