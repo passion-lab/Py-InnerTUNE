@@ -28,6 +28,7 @@ class Filesystem:
         self.current_songs: list = [
             # {"id": "", "path": "", "title": "", "artists": "", "album": "", "release": ""},
         ]
+        self.original_order: list = []  # Same list as above for backup/reset after toggling off the shuffle mode
 
     def get_default(self):
         return self.default_folder
@@ -46,8 +47,11 @@ class Filesystem:
             if song['id'] == song_id:
                 return song
 
-    def make_shuffle(self):
-        shuffle(self.current_songs)
+    def make_shuffle(self, mode: bool = True):
+        if mode:
+            shuffle(self.current_songs)
+        else:
+            self.current_songs = self.original_order.copy()
 
     def open_files(self, title: str = "Open files"):
         files = askopenfilenames(defaultextension="*.mp3", initialdir=self.default_folder, title=title,
@@ -108,6 +112,7 @@ class Filesystem:
                 self.current_songs.append(
                     {"id": randint(10000, 99999), "path": file, "title": title, "artists": artists, "album": album, "release": year}
                 )
+                self.original_order = self.current_songs.copy()
 
 
 class AudioPlayer:
