@@ -215,11 +215,14 @@ class App:
     def make_playing_controller(self):
         info_frame = Frame(self.header_bg, bg=self.color.head_back, padx=10, pady=5)
         info_frame.pack(side='left')
-        self.tgl_play = Label(info_frame, text="\ue102", font=self.font.iconL, fg=self.color.play_fore, bg=self.color.head_back)
+        self.tgl_play = Label(info_frame, text="\ue102", font=self.font.iconL, fg=self.color.play_fore,
+                              bg=self.color.head_back)
         self.tgl_play.pack(side='left', fill='both')
-        status = Label(info_frame, textvariable=self.status, font=self.font.subtitle, fg=self.color.head_subtitle, bg=self.color.head_back)
+        status = Label(info_frame, textvariable=self.status, font=self.font.subtitle, fg=self.color.head_subtitle,
+                       bg=self.color.head_back)
         status.pack(side='top', anchor='sw')
-        title = Label(info_frame, textvariable=self.title, font=self.font.title, fg=self.color.head_title, bg=self.color.head_back)
+        title = Label(info_frame, textvariable=self.title, font=self.font.title, fg=self.color.head_title,
+                      bg=self.color.head_back)
         title.pack(side='top', anchor='w')
 
         control_frame = Frame(self.header_bg, bg=self.color.head_back, padx=10, pady=3)
@@ -228,53 +231,68 @@ class App:
         top = Frame(control_frame, bg=self.color.head_back)
         top.pack(side='bottom', anchor='e')
         buttons = {
-            "timer": "\ue121",
+            "timer"   : "\ue121",
             "playlist": "\ue142",
-            "shuffle": "\ue148",
-            "repeat": "\ue14a",
-            "next": "\ue101",
-            "stop": "\ue15b",
+            "shuffle" : "\ue148",
+            "repeat"  : "\ue14a",
+            "next"    : "\ue101",
+            "stop"    : "\ue15b",
             "previous": "\ue100",
         }
         for button in buttons:
-            btn = Label(top, text=buttons[button], font=self.font.iconM, fg=self.color.control_fore, bg=self.color.head_back)
+            btn = Label(top, text=buttons[button], font=self.font.iconM, fg=self.color.control_fore,
+                        bg=self.color.head_back)
             btn.pack(side='right')
-            btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.control_hover_fore) if not b in self.active_controls else None)
-            btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.control_fore) if not b in self.active_controls else None)
+            btn.bind('<Enter>', lambda e=None, b=btn: b.configure(
+                fg=self.color.control_hover_fore) if not b in self.active_controls else None)
+            btn.bind('<Leave>', lambda e=None, b=btn: b.configure(
+                fg=self.color.control_fore) if not b in self.active_controls else None)
             btn.bind('<Button-1>', lambda e=None, b=btn, a=button: self._control_actions(button=b, action=a))
         # row-2
         bottom = Frame(control_frame, bg=self.color.head_back)
         bottom.pack(side='bottom', anchor='e')
-        self.tgl_full = Label(bottom, text="\ue247", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        self.tgl_full = Label(bottom, text="\ue247", font=self.font.iconS, fg=self.color.control_fore,
+                              bg=self.color.head_back)
         self.tgl_full.pack(side='right')
         # TODO: Will have to improve the volume bar with custom ttk styling
-        vol = Scale(bottom, from_=0.0, to=1.0, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
-                    sliderlength=10, bd=0, width=5, highlightthickness=0, resolution=0.01,  cursor='size_we',
+        vol = Scale(bottom, from_=0.0, to=1.0, orient="horizontal", relief="flat", sliderrelief="solid",
+                    showvalue=False,
+                    sliderlength=10, bd=0, width=5, highlightthickness=0, resolution=0.01, cursor='size_we',
                     troughcolor=self.color.slider_back, variable=self.volume, command=self._volume)
         vol.pack(side='right')
-        self.tgl_mute = Label(bottom, text="\ue246", font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        self.tgl_mute = Label(bottom, text="\ue246", font=self.font.iconS, fg=self.color.control_fore,
+                              bg=self.color.head_back)
         self.tgl_mute.pack(side='right')
-        duration = Label(bottom, textvariable=self.duration, font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        duration = Label(bottom, textvariable=self.duration, font=self.font.iconS, fg=self.color.control_fore,
+                         bg=self.color.head_back)
         duration.pack(side='right')
         # TODO: Will have to improve the seek bar with custom ttk styling
-        self.seek_bar = Scale(bottom, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid", showvalue=False,
-                              sliderlength=2, bd=0, width=5, highlightthickness=0, length=200,  cursor='size_we', command=self._seek,
+        self.seek_bar = Scale(bottom, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid",
+                              showvalue=False,
+                              sliderlength=2, bd=0, width=5, highlightthickness=0, length=200, cursor='size_we',
+                              command=self._seek,
                               troughcolor=self.color.slider_back, variable=self.position)
         self.seek_bar.pack(side='right')
-        elapsed = Label(bottom, textvariable=self.elapsed, font=self.font.iconS, fg=self.color.control_fore, bg=self.color.head_back)
+        elapsed = Label(bottom, textvariable=self.elapsed, font=self.font.iconS, fg=self.color.control_fore,
+                        bg=self.color.head_back)
         elapsed.pack(side='right')
 
         # Bindings
         self.tgl_play.bind('<Button-1>', lambda e=None: self._play())
-        self.tgl_full.bind('<Enter>', lambda e=None: self.tgl_full.configure(fg=self.color.control_hover_fore) if self.tgl_full not in self.active_controls else None)
-        self.tgl_full.bind('<Leave>', lambda e=None: self.tgl_full.configure(fg=self.color.control_fore) if self.tgl_full not in self.active_controls else None)
+        self.tgl_full.bind('<Enter>', lambda e=None: self.tgl_full.configure(
+            fg=self.color.control_hover_fore) if self.tgl_full not in self.active_controls else None)
+        self.tgl_full.bind('<Leave>', lambda e=None: self.tgl_full.configure(
+            fg=self.color.control_fore) if self.tgl_full not in self.active_controls else None)
         self.tgl_full.bind('<Button-1>', lambda e=None: self._full())
-        self.tgl_mute.bind('<Enter>', lambda e=None: self.tgl_mute.configure(fg=self.color.control_hover_fore) if self.tgl_mute not in self.active_controls else None)
-        self.tgl_mute.bind('<Leave>', lambda e=None: self.tgl_mute.configure(fg=self.color.control_fore) if self.tgl_mute not in self.active_controls else None)
+        self.tgl_mute.bind('<Enter>', lambda e=None: self.tgl_mute.configure(
+            fg=self.color.control_hover_fore) if self.tgl_mute not in self.active_controls else None)
+        self.tgl_mute.bind('<Leave>', lambda e=None: self.tgl_mute.configure(
+            fg=self.color.control_fore) if self.tgl_mute not in self.active_controls else None)
         self.tgl_mute.bind('<Button-1>', lambda e=None: self._mute())
 
     def make_preload_bg(self):
-        Label(self.body_bg, image=self.images['entry_banner'], bg=self.color.main_back).place(relx=0.5, rely=0.5, anchor='center')
+        Label(self.body_bg, image=self.images['entry_banner'], bg=self.color.main_back).place(relx=0.5, rely=0.5,
+                                                                                              anchor='center')
 
     def make_entry_box(self):
         bg_frame = Frame(self.body_bg)
@@ -297,7 +315,7 @@ class App:
     def make_song_list(self, songs: list[dict]):
         self.total_songs = len(songs)
         commands = (
-            ["\ue107", partial(self._delete)],   # delete
+            ["\ue107", partial(self._delete)],  # delete
             ["\ue193", partial(self._edit_meta)],  # edit metadata
             ["\ue110", partial(self._play_next)],  # play next
             ["\ue142", partial(self._add_playlist)],  # add to playlist
@@ -308,7 +326,7 @@ class App:
         for i, song in enumerate(songs):
             details = (("ARTIST(S):", song['artists']), ("ALBUM:", song['album']), ("RELEASED:", song['release']))
 
-            frame = Frame(entry_box, padx=15, pady=10, bg=self.color.entry_back, width=1076-60, height=32+25)
+            frame = Frame(entry_box, padx=15, pady=10, bg=self.color.entry_back, width=1076 - 60, height=32 + 25)
             frame.pack(padx=30, pady=7, fill='x')
             frame.pack_propagate(False)  # Fixes the width and the height for each entry frames
             c_frm = Frame(frame, bg=self.color.entry_back)
@@ -316,19 +334,24 @@ class App:
 
             thumb = Label(frame, image=self.images['thumb'], bg=self.color.entry_back, anchor='w')
             thumb.pack(side='left', fill='both', anchor='w', padx=(0, 5))
-            heading = Label(frame, text=song['title'], font=self.font.heading, fg=self.color.entry_heading_fore, bg=self.color.entry_back, anchor='w')
+            heading = Label(frame, text=song['title'], font=self.font.heading, fg=self.color.entry_heading_fore,
+                            bg=self.color.entry_back, anchor='w')
             heading.pack(side='top', anchor='w')
 
             if not song['artists'] == song['album'] == song['release'] == 'Unknown':
                 for detail in details:
-                    Label(frame, text=detail[0], font=self.font.key, fg=self.color.entry_key_fore, bg=self.color.entry_back, anchor='w').pack(side='left', anchor='w')
-                    Label(frame, text=detail[1], font=self.font.value, fg=self.color.entry_value_fore, bg=self.color.entry_back, anchor='w').pack(side='left', anchor='w')
+                    Label(frame, text=detail[0], font=self.font.key, fg=self.color.entry_key_fore,
+                          bg=self.color.entry_back, anchor='w').pack(side='left', anchor='w')
+                    Label(frame, text=detail[1], font=self.font.value, fg=self.color.entry_value_fore,
+                          bg=self.color.entry_back, anchor='w').pack(side='left', anchor='w')
             else:
                 # TODO: Random quotations about music would be great!
-                Label(frame, text="Details not available!", font=self.font.na, fg=self.color.entry_na_fore, bg=self.color.entry_back, anchor='w').pack(side='left', anchor='w')
+                Label(frame, text="Details not available!", font=self.font.na, fg=self.color.entry_na_fore,
+                      bg=self.color.entry_back, anchor='w').pack(side='left', anchor='w')
 
             for command in commands:
-                btn = Label(c_frm, text=command[0], font=self.font.iconM, fg=self.color.entry_btn_fore, bg=self.color.entry_back, anchor='e')
+                btn = Label(c_frm, text=command[0], font=self.font.iconM, fg=self.color.entry_btn_fore,
+                            bg=self.color.entry_back, anchor='e')
                 btn.pack(side='right', fill='both', anchor='e')
                 btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.entry_btn_hover_fore))
                 btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.entry_btn_fore))
@@ -336,8 +359,12 @@ class App:
             # Bindings...
             frame.bind('<Enter>', lambda e=None, f=frame: self._entry_hover(f, hover=True))
             frame.bind('<Leave>', lambda e=None, f=frame: self._entry_hover(f, hover=False))
-            frame.bind('<Double-Button-1>', lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t, hd=h))
-            thumb.bind('<Button-1>', lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t, hd=h))
+            frame.bind('<Double-Button-1>',
+                       lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t,
+                                                                                   hd=h))
+            thumb.bind('<Button-1>',
+                       lambda e=None, s=song['id'], t=thumb, h=heading: self._play(song_id=s, force_play=True, th=t,
+                                                                                   hd=h))
 
             # Thumb and Titles of all entries with respect of their IDs adds to the all_entries dictionary
             self.all_entries[song['id']] = (thumb, heading)
@@ -572,7 +599,8 @@ class App:
                     self.last_active_entry = [(self.active_entry[0][0], self.active_entry[0][1])]
                     # Clear the active_entry list as no song will be played on hitting the stop button
                     self.active_entry.clear()
-            except: pass
+            except:
+                pass
             finally:
                 # Reset the styling of last active song entry
                 self.last_active_entry[0][0]['image'] = self.images['thumb']
@@ -643,14 +671,18 @@ class App:
                 return False
 
         def __switch_off():
-            selected_option.set(0)  # For deselect the options
-            entered_value.set("")
-            _input.configure(state='disabled')
-            _cnv.configure(bg=self.color.disabled)
-            _switch.configure(image=self.images['toggle_off'], state='disabled', cursor='arrow')
-            self.is_timer = [False, 0]
-            self.timer.turn_switch_timer('OFF')
-            self._set_control(element, will_set=False)
+            try:
+                self._set_control(element, will_set=False)
+            except:
+                pass
+            finally:
+                selected_option.set(0)  # For deselect the options
+                entered_value.set("")
+                _input.configure(state='disabled')
+                _cnv.configure(bg=self.color.disabled)
+                _switch.configure(image=self.images['toggle_off'], state='disabled', cursor='arrow')
+                self.is_timer = [False, 0]
+                self.timer.turn_switch_timer('OFF')
 
         def __switch_on():
             _switch.configure(image=self.images['toggle_on'])
@@ -689,21 +721,29 @@ class App:
             selected_option = IntVar()  # Values are 1, 2, 5, 15, 30, 60 & 123
             entered_value = StringVar()
             for option in options:
-                _rd = Radiobutton(bg_frame, text=option[0], font=self.font.popup_option, fg=self.color.popup_option_fore,
-                                  border=0, image=self.images['radio_inactive'], selectimage=self.images['radio_active'],
+                _rd = Radiobutton(bg_frame, text=option[0], font=self.font.popup_option,
+                                  fg=self.color.popup_option_fore,
+                                  border=0, image=self.images['radio_inactive'],
+                                  selectimage=self.images['radio_active'],
                                   compound='left', indicatoron=False, bg=self.color.popup_back, value=option[1],
                                   variable=selected_option, pady=2, padx=15, anchor='w', command=__on_select)
                 _rd.pack(fill='x', anchor='w', padx=30)
-                _rd.bind('<Enter>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_option_hover, image=self.images['radio_hover']))
-                _rd.bind('<Leave>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_back, image=self.images['radio_inactive']))
-            _input = Entry(bg_frame, font=self.font.popup_option, fg=self.color.popup_option_fore, disabledbackground=self.color.popup_back,
-                           bg=self.color.popup_back, relief='solid', borderwidth=0, state='disabled', textvariable=entered_value, width=3)
+                _rd.bind('<Enter>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_option_hover,
+                                                                        image=self.images['radio_hover']))
+                _rd.bind('<Leave>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_back,
+                                                                        image=self.images['radio_inactive']))
+            _input = Entry(bg_frame, font=self.font.popup_option, fg=self.color.popup_option_fore,
+                           disabledbackground=self.color.popup_back,
+                           bg=self.color.popup_back, relief='solid', borderwidth=0, state='disabled',
+                           textvariable=entered_value, width=3)
             _input.pack(padx=(40 + 45, 30), pady=(4, 0), anchor='w', fill='x')
             _reg_val_func = self.timer_popup_window.register(__input_validation)
             _input.configure(validate='key', validatecommand=(_reg_val_func, '%P'))
             _cnv = Canvas(bg_frame, bg=self.color.disabled, height=1, width=100, borderwidth=0, highlightthickness=0)
             _cnv.pack(padx=(40 + 45, 30), pady=(0, 15), anchor='w')
-            _switch = Label(bg_frame, image=self.images['toggle_off'] if not self.is_timer[0] else self.images['toggle_on'], bg=self.color.popup_back, state='disabled')
+            _switch = Label(bg_frame,
+                            image=self.images['toggle_off'] if not self.is_timer[0] else self.images['toggle_on'],
+                            bg=self.color.popup_back, state='disabled')
             _switch.pack(padx=30, pady=15)
             if self.is_timer[0]:
                 selected_option.set(self.is_timer[1])
@@ -803,7 +843,8 @@ class App:
         if done:
             try:
                 self.entry_box_bg.pack_forget()  # First clear the existing entry
-            except: pass
+            except:
+                pass
             finally:
                 self.make_song_list(self.backend.get_current_songs())  # Then, make new entries
                 self.audio.load(file=self.backend.get_current_songs()[0]['path'])
@@ -815,7 +856,8 @@ class App:
         if done:
             try:
                 self.entry_box_bg.pack_forget()  # First clear the existing entry
-            except: pass
+            except:
+                pass
             finally:
                 self.make_song_list(self.backend.get_current_songs())  # Then, make new entries
                 self.audio.load(file=self.backend.get_current_songs()[0]['path'])
@@ -841,4 +883,3 @@ class App:
     @staticmethod
     def _get_hms(seconds: float):
         return strftime("%H:%M:%S", gmtime(seconds))
-
