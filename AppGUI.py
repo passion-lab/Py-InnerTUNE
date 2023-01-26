@@ -649,6 +649,7 @@ class App:
             elif selected_option.get() in [5, 15, 30, 60]:
                 self.timer.add_new_timer(selected_option.get())
                 self.timer.turn_switch_timer('ON', self._close)
+            # Option 1 and Option 2 are handled by the progress() method
 
         # App sleep timer window
         if not self.timer_popup:
