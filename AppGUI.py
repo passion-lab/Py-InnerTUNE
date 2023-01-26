@@ -21,7 +21,7 @@ from threading import Thread, Event
 
 # Custom imports
 from AppDefaults import ColorDefaults, FontDefaults
-from AppBackend import Filesystem, AudioPlayer
+from AppBackend import Filesystem, AudioPlayer, SleepTimer
 
 
 class App:
@@ -32,6 +32,7 @@ class App:
         self.font = FontDefaults()
         self.backend = Filesystem()
         self.audio = AudioPlayer(initial_volume=self.default_volume)
+        self.timer = SleepTimer()
         self.app_name = "InnerTUNE"
         self.last_X = 0
         self.last_Y = 0
@@ -627,13 +628,19 @@ class App:
             _switch.configure(image=self.images['toggle_off'])
             _switch.bind('<Button-1>', lambda e=None: __switch_on())
             self.is_timer = [False, 0]
+            self.timer.turn_switch_timer('OFF')
 
         def __switch_on():
             _switch.configure(image=self.images['toggle_on'])
             _switch.bind('<Button-1>', lambda e=None: __switch_off())
             self.is_timer = [True, selected_option.get()]
+
             if selected_option.get() == 123:
                 self.is_timer.insert(2, int(entered_value.get()))
+                self.timer.add_new_timer(int(entered_value.get()))
+            elif selected_option.get() in [5, 15, 30, 60]:
+                self.timer.add_new_timer(selected_option.get())
+            self.timer.turn_switch_timer('ON', self._close)
 
         if not self.timer_popup:
             self.timer_popup = True
@@ -797,7 +804,8 @@ class App:
         self._exit_main_menu()
 
     def _close(self):
-        self._exit_main_menu()
+        if self.menu_dropdown:
+            self._exit_main_menu()
         self._stop()
         self.app_terminate = True
         self.audio.unload()
