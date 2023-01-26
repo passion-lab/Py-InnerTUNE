@@ -521,8 +521,10 @@ class App:
                 self._next()
             case "repeat":
                 self._repeat(element=button)
+            case "shuffle":
+                self._shuffle()
             case "timer":
-                self._timer()
+                self._timer(element=button)
 
     def _load_next_prev(self, parameter: Literal["NEXT", "PREV"]):
         if self.current_song_index == 0:  # If it's playing the first song...
@@ -593,7 +595,7 @@ class App:
     def _que(self):
         pass
 
-    def _timer(self):
+    def _timer(self, element: Label):
 
         def __close_timer_window():
             self.timer_popup_window.destroy()
@@ -636,6 +638,7 @@ class App:
             _switch.configure(image=self.images['toggle_off'], state='disabled', cursor='arrow')
             self.is_timer = [False, 0]
             self.timer.turn_switch_timer('OFF')
+            self._set_control(element, will_set=False)
 
         def __switch_on():
             _switch.configure(image=self.images['toggle_on'])
@@ -650,6 +653,7 @@ class App:
                 self.timer.add_new_timer(selected_option.get())
                 self.timer.turn_switch_timer('ON', self._close)
             # Option 1 and Option 2 are handled by the progress() method
+            self._set_control(element, will_set=True)
 
         # App sleep timer window
         if not self.timer_popup:
