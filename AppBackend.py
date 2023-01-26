@@ -6,7 +6,7 @@ from builtins import callable
 from threading import Thread
 from time import sleep
 from tkinter.filedialog import askopenfilenames, askdirectory
-from random import randint, random
+from random import randint, shuffle
 
 from PIL import ImageTk, Image
 from mutagen.id3 import ID3
@@ -45,6 +45,9 @@ class Filesystem:
         for song in self.current_songs:
             if song['id'] == song_id:
                 return song
+
+    def make_shuffle(self):
+        shuffle(self.current_songs)
 
     def open_files(self, title: str = "Open files"):
         files = askopenfilenames(defaultextension="*.mp3", initialdir=self.default_folder, title=title,
@@ -185,6 +188,7 @@ class SleepTimer:
         self.timer_switch: bool = False
 
     def add_new_timer(self, minutes: int):
+        # Actually get seconds from the minutes parameter, thus multiplied with 60 to get the minutes
         self.current_time = minutes * 60
 
     def turn_switch_timer(self, switch: Literal["ON", "OFF"], termination_func=...):
