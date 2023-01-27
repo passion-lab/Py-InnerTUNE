@@ -64,6 +64,7 @@ class App:
         self.load_files()
         self.status = StringVar(value="UPLOAD FILE(S)/FOLDER")
         self.title = StringVar(value="Play your favorite tune ...")
+        self.prev_status, self.prev_title = "", ""
         self.volume = DoubleVar(value=self.default_volume)
         self.position = DoubleVar(value=0)
         self.duration = StringVar(value="00:00:00")
@@ -458,6 +459,8 @@ class App:
                 self.last_active_entry[0][0]['image'] = self.images['thumb_active']
                 self.last_active_entry[0][1]['fg'] = self.color.ascent
                 self.play_trigger = True
+                # Adds the first song to the played song history list in the backend
+                self.backend.set_played_song_history(song_title=self.backend.current_songs[0]['title'])
                 if self.current_song_index is None:
                     self.current_song_index = 0
             elif self.is_paused:
@@ -472,8 +475,6 @@ class App:
         else:
             self._stop()
             song = self.backend.get_song(song_id)
-            # Getting the current song index from the backend
-            self.current_song_index = self.backend.current_songs.index(song)
             self.audio.load(song['path'])
             self.play_trigger = True
             self.tgl_play.configure(text="\ue103")
@@ -485,28 +486,61 @@ class App:
             # Update both active_entry and last_active_entry with the currently playing song
             self.active_entry = [(element['th'], element['hd'])]
             self.last_active_entry = [(element['th'], element['hd'], song['title'])]
+            # Adds the currently selected song to the played song history list in the backend
+            self.backend.set_played_song_history(song_title=song['title'])
+            # Getting the current song index from the backend
+            self.current_song_index = self.backend.current_songs.index(song)
 
     def progress(self):
+        # Added 2 booleans to run status_change method for one time only within the conditioned time
+        _change, _reset = False, False
+        # Sets the total number of seconds of the currently playing song
+        _total_length = 0.0
+
         # Until the app gets termination signal, it will loop in the background
         while not self.app_terminate:
 
             # If any play button triggers
             if self.play_trigger:
+                _total_length = self.audio.length()
                 # Sets the total duration of the currently loaded song and total range of the seek bar
-                self.duration.set(self._get_hms(seconds=self.audio.length()))
+                self.duration.set(self._get_hms(seconds=_total_length))
                 self.seek_bar.configure(to=self.audio.length())
                 # Will play the previously loaded song from _play method
                 self.audio.play_pause(play_state='PLAY')
 
                 self.play_trigger = False
                 self.is_playing = True
+                # Reset to default (i.e., False) on every new song. [hint: False=Will run, True=Won't run]
+                _change, _reset = False, False
             else:
                 # If a song is playing or pausing
                 if self.is_playing:
                     # When a song is now playing or resuming
                     if self.audio.currently_playing():
-                        self.elapsed.set(self._get_hms(seconds=self.audio.current_position() / 1000))
-                        self.position.set(self.audio.current_position() / 1000)
+                        _cur_pos = self.audio.current_position() / 1000
+                        self.elapsed.set(self._get_hms(seconds=_cur_pos))
+                        self.position.set(_cur_pos)
+                        # 4. After 20 seconds, it'll display the now playing song again
+                        if _total_length - 40 <= _cur_pos and not _reset:
+                            self._status_change(reset=True)
+                            _reset = True
+                        # 3. Before a minute of finishing the song, it'll display the upcoming song
+                        elif _total_length - 60 <= _cur_pos and not _change:
+                            _detail = self.backend.get_song(self._load_next_prev('NEXT')['id'])
+                            self._status_change("UPCOMING SONG...", _detail['title'])
+                            _change, _reset = True, False
+                        # 2. After 10 seconds, it'll display the now playing song again
+                        elif 75.0 >= _cur_pos >= 70.5 and not _reset:
+                            self._status_change(reset=True)
+                            _reset, _change = True, False
+                        # 1. After a minute of starting a song, it'll display the previously played song
+                        elif 70.0 >= _cur_pos >= 60.0 and not _change:
+                            if len(self.backend.played_songs_history) > 1:
+                                self._status_change("YOU JUST HAVE LISTENED...", self.backend.played_songs_history[-2])
+                            else:
+                                self._status_change("YOU'RE LISTENING...", "The first song of this playlist")
+                            _change = True
                     else:
                         # On ending of the current song
                         if self.audio.current_position() == -1:
@@ -540,6 +574,16 @@ class App:
 
         # Exit the thread on getting termination signal
         return None
+
+    def _status_change(self, temp_status: str = ..., temp_title: str = ..., reset: bool = False):
+        # Applicable for only one time run, otherwise previous data will change with new data
+        if not reset:
+            self.prev_status, self.prev_title = self.status.get(), self.title.get()
+            self.status.set(temp_status)
+            self.title.set(temp_title)
+        else:
+            self.status.set(self.prev_status)
+            self.title.set(self.prev_title)
 
     def _control_actions(self, button: Label, action: str):
         match action:
@@ -883,3 +927,5 @@ class App:
     @staticmethod
     def _get_hms(seconds: float):
         return strftime("%H:%M:%S", gmtime(seconds))
+
+
