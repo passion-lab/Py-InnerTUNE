@@ -372,6 +372,7 @@ class App:
             if i == 0:
                 self.last_active_entry = [(thumb, heading, song['title'])]
 
+        # Player control buttons activate after loading the songs
         for act, btn in self.all_control_buttons:
             btn.configure(fg=self.color.control_fore)
             btn.bind('<Enter>', lambda e=None, b=btn: b.configure(
