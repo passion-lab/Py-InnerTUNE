@@ -55,6 +55,7 @@ class App:
         self.is_timer: [bool, int] or [bool, int, int] = [False, 0]
         self.total_songs: int = 0
         self.current_song_index: int | None = None
+        self.all_control_buttons: [Label] = []
         # Stores the list of thumbnails and headings of all the entries in respect of their IDs (song ID)
         self.all_entries: {int: (Label, Label)} = {}  # [{id1: (thumb1, title1)}, {id2: (thumb2, title2)}, ...]
 
@@ -64,7 +65,7 @@ class App:
         self.load_files()
         self.status = StringVar(value="UPLOAD FILE(S)/FOLDER")
         self.title = StringVar(value="Play your favorite tune ...")
-        self.prev_status, self.prev_title = "", ""
+        self.prev_status, self.prev_title = "", ""  # Stores previous status and title before changing
         self.volume = DoubleVar(value=self.default_volume)
         self.position = DoubleVar(value=0)
         self.duration = StringVar(value="00:00:00")
@@ -241,14 +242,11 @@ class App:
             "previous": "\ue100",
         }
         for button in buttons:
-            btn = Label(top, text=buttons[button], font=self.font.iconM, fg=self.color.control_fore,
+            btn = Label(top, text=buttons[button], font=self.font.iconM, fg=self.color.control_disabled,
                         bg=self.color.head_back)
             btn.pack(side='right')
-            btn.bind('<Enter>', lambda e=None, b=btn: b.configure(
-                fg=self.color.control_hover_fore) if not b in self.active_controls else None)
-            btn.bind('<Leave>', lambda e=None, b=btn: b.configure(
-                fg=self.color.control_fore) if not b in self.active_controls else None)
-            btn.bind('<Button-1>', lambda e=None, b=btn, a=button: self._control_actions(button=b, action=a))
+            # Adding actions, button labels to access later
+            self.all_control_buttons.append((button, btn))
         # row-2
         bottom = Frame(control_frame, bg=self.color.head_back)
         bottom.pack(side='bottom', anchor='e')
@@ -315,6 +313,7 @@ class App:
 
     def make_song_list(self, songs: list[dict]):
         self.total_songs = len(songs)
+
         commands = (
             ["\ue107", partial(self._delete)],  # delete
             ["\ue193", partial(self._edit_meta)],  # edit metadata
@@ -372,6 +371,14 @@ class App:
             # First entry added to the last_active_entry for thumb and heading change on hitting controller play button
             if i == 0:
                 self.last_active_entry = [(thumb, heading, song['title'])]
+
+        for act, btn in self.all_control_buttons:
+            btn.configure(fg=self.color.control_fore)
+            btn.bind('<Enter>', lambda e=None, b=btn: b.configure(
+                fg=self.color.control_hover_fore) if b not in self.active_controls else None)
+            btn.bind('<Leave>', lambda e=None, b=btn: b.configure(
+                fg=self.color.control_fore) if b not in self.active_controls else None)
+            btn.bind('<Button-1>', lambda e=None, b=btn, a=act: self._control_actions(button=b, action=a))
 
         self.status.set("START YOUR INNER TUNE WITH")
         self.title.set(self.last_active_entry[0][2])  # Set the title to the first song's title as set before
