@@ -29,6 +29,7 @@ class Filesystem:
             # {"id": "", "path": "", "title": "", "artists": "", "album": "", "release": ""},
         ]
         self.original_order: list = []  # Same list as above for backup/reset after toggling off the shuffle mode
+        self.played_songs_history: list = []
 
     def get_default(self):
         return self.default_folder
@@ -46,6 +47,17 @@ class Filesystem:
         for song in self.current_songs:
             if song['id'] == song_id:
                 return song
+
+    def set_played_song_history(self, song_title: str):
+        """
+        Put the currently played song's title to the played song history list.
+
+        :param song_id: Currently played song ID
+        :type song_id: int
+        :return: None
+        :rtype: None
+        """
+        self.played_songs_history.append(song_title)
 
     def make_shuffle(self, mode: bool = True):
         if mode:
@@ -113,6 +125,9 @@ class Filesystem:
                     {"id": randint(10000, 99999), "path": file, "title": title, "artists": artists, "album": album, "release": year}
                 )
                 self.original_order = self.current_songs.copy()
+
+    def delete_song(self, song_id: int):
+        pass
 
 
 class AudioPlayer:
