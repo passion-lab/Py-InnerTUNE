@@ -22,6 +22,7 @@ class ColorDefaults:
                 self.head_title = "#2b2b2b"
                 self.play_fore = self.ascent
                 self.control_fore = "#777777"
+                self.control_disabled = "#a2a2a2"
                 self.control_hover_fore = "#373737"
                 self.control_active_fore = self.ascent
                 self.slider_back = "#a8a8a8"
