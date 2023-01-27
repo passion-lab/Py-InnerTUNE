@@ -52,8 +52,8 @@ class Filesystem:
         """
         Put the currently played song's title to the played song history list.
 
-        :param song_id: Currently played song ID
-        :type song_id: int
+        :param song_title: Currently played song title
+        :type song_title: str
         :return: None
         :rtype: None
         """
