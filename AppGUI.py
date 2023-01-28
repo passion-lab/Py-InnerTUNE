@@ -42,6 +42,7 @@ class App:
         self.menu_dropdown: bool = False
         self.timer_popup: bool = False
         self.play_trigger: bool = False
+        self.mini_player: bool = False
         self.is_playing: bool = False
         self.is_paused: bool = False
         self.is_repeat: bool = False
@@ -63,8 +64,10 @@ class App:
         self.set_title(self.app_name)
         self.configuration()
         self.load_files()
+        self.play_pause = StringVar(value="\ue102")  # \ue102 = play; \ue103 = pause
         self.status = StringVar(value="UPLOAD FILE(S)/FOLDER")
         self.title = StringVar(value="Play your favorite tune ...")
+        self.subtitle = StringVar(value="Song artists appear here")
         self.prev_status, self.prev_title = "", ""  # Stores previous status and title before changing
         self.volume = DoubleVar(value=self.default_volume)
         self.position = DoubleVar(value=0)
@@ -78,6 +81,7 @@ class App:
         self.main_menu_window: Toplevel = ...
         self.menu_dropdown_window: Toplevel
         self.timer_popup_window: Toplevel = ...
+        self.mini_player_window: Toplevel = ...
         self.entry_box_bg: Frame = ...
         self.tgl_play: Label = ...
         self.tgl_mute: Label = ...
@@ -114,6 +118,7 @@ class App:
         self.images["radio_hover"] = ImageTk.PhotoImage(Image.open(image_dir + 'radio_hover.png'))
         self.images["toggle_on"] = ImageTk.PhotoImage(Image.open(image_dir + 'toggle_on.png'))
         self.images["toggle_off"] = ImageTk.PhotoImage(Image.open(image_dir + 'toggle_off.png'))
+        self.images["mini_player_back"] = ImageTk.PhotoImage(Image.open(image_dir + 'mini_player_back.png'))
 
     def bindings(self):
         self.header_bg.bind('<Button-1>', self._save_last_click)
@@ -217,7 +222,7 @@ class App:
     def make_playing_controller(self):
         info_frame = Frame(self.header_bg, bg=self.color.head_back, padx=10, pady=5)
         info_frame.pack(side='left')
-        self.tgl_play = Label(info_frame, text="\ue102", font=self.font.iconL, fg=self.color.play_fore,
+        self.tgl_play = Label(info_frame, textvariable=self.play_pause, font=self.font.iconL, fg=self.color.play_fore,
                               bg=self.color.head_back)
         self.tgl_play.pack(side='left', fill='both')
         status = Label(info_frame, textvariable=self.status, font=self.font.subtitle, fg=self.color.head_subtitle,
@@ -232,6 +237,14 @@ class App:
         # row-1
         top = Frame(control_frame, bg=self.color.head_back)
         top.pack(side='bottom', anchor='e')
+        # Mini-Player button
+        mini_player_button = Label(top, text="\ue2b3", font=self.font.iconM, fg=self.color.control_fore,
+                                   bg=self.color.head_back)
+        mini_player_button.pack(side='right')
+        mini_player_button.bind('<Enter>', lambda e=None: mini_player_button.configure(fg=self.color.ascent))
+        mini_player_button.bind('<Leave>', lambda e=None: mini_player_button.configure(fg=self.color.control_fore))
+        mini_player_button.bind('<Button-1>', lambda e=None: self._mini_player())
+        # Control buttons
         buttons = {
             "timer"   : "\ue121",
             "playlist": "\ue142",
@@ -371,6 +384,7 @@ class App:
             # First entry added to the last_active_entry for thumb and heading change on hitting controller play button
             if i == 0:
                 self.last_active_entry = [(thumb, heading, song['title'])]
+                self.subtitle.set(song['artists'])
 
         # Player control buttons activate after loading the songs
         for act, btn in self.all_control_buttons:
@@ -460,7 +474,7 @@ class App:
 
         if not force_play:
             if not self.is_playing:
-                self.tgl_play.configure(text="\ue103")
+                self.play_pause.set("\ue103")
                 self.status.set("NOW PLAYING")
                 # Access the last_active_entry and change the thumb and heading style either hitting the controller
                 # play button first or hitting the play button after invoking the stop button
@@ -472,11 +486,11 @@ class App:
                 if self.current_song_index is None:
                     self.current_song_index = 0
             elif self.is_paused:
-                self.tgl_play.configure(text="\ue103")
+                self.play_pause.set("\ue103")
                 self.audio.play_pause(play_state="RESUME")
                 self.is_paused = False
             elif not self.is_paused:
-                self.tgl_play.configure(text="\ue102")
+                self.play_pause.set("\ue102")
                 self.audio.play_pause(play_state="PAUSE")
                 self.is_paused = True
         # If forced to play individual file from song entries
@@ -485,7 +499,7 @@ class App:
             song = self.backend.get_song(song_id)
             self.audio.load(song['path'])
             self.play_trigger = True
-            self.tgl_play.configure(text="\ue103")
+            self.play_pause.set("\ue103")
             self.status.set("NOW PLAYING")
             self.title.set(song['title'])
             # Change the thumb and the heading of the currently playing song's entry
@@ -496,6 +510,7 @@ class App:
             self.last_active_entry = [(element['th'], element['hd'], song['title'])]
             # Adds the currently selected song to the played song history list in the backend
             self.backend.set_played_song_history(song_title=song['title'])
+            self.subtitle.set(song['artists'])
             # Getting the current song index from the backend
             self.current_song_index = self.backend.current_songs.index(song)
 
@@ -657,7 +672,7 @@ class App:
                 # Reset the styling of last active song entry
                 self.last_active_entry[0][0]['image'] = self.images['thumb']
                 self.last_active_entry[0][1]['fg'] = self.color.entry_heading_fore
-                self.tgl_play.configure(text="\ue102")
+                self.play_pause.set("\ue102")
 
     def _next(self):
         required = self._load_next_prev('NEXT')
@@ -930,6 +945,46 @@ class App:
         self.app_terminate = True
         self.audio.unload()
         self.main_window.destroy()
+
+    # Mini-PLayer
+    def _mini_player(self):
+
+        def __close_mini_player():
+            self.main_window.deiconify()
+            self.mini_player_window.destroy()
+            self.mini_player = False
+
+        def __display_control():
+            pass
+
+        if not self.mini_player:
+            self.mini_player = True
+            self.mini_player_window = window = Toplevel()
+            self.mini_player_window.overrideredirect(True)
+            self.mini_player_window.attributes('-topmost', True)
+            self.mini_player_window.attributes('-transparentcolor', "#000111")
+            # self.main_window.withdraw()
+
+            # Background image
+            Label(window, image=self.images['mini_player_back'], bg="#000111").pack()
+
+            # Play/Pause button
+            play = Label(window, textvariable=self.play_pause, font=self.font.iconL, fg="white", bg=self.color.ascent)
+            play.place(x=257, y=9)
+            play.bind('<Button-1>', lambda e=None: self._play())
+
+            # Title
+            Label(window, textvariable=self.title, font=self.font.title, fg=self.color.head_title, bg="white").place(x=10, y=7)
+            Label(window, textvariable=self.subtitle, font=self.font.subtitle, fg=self.color.head_subtitle, bg="white").place(x=10, y=36)
+
+            w, h = self.main_window.winfo_screenwidth(), self.main_window.winfo_screenheight()
+            w1, h1 = self.images['mini_player_back'].width(), self.images['mini_player_back'].height()
+            self.mini_player_window.geometry(f"+{w - w1}+{h - h1 - 60}")
+            self.mini_player_window.bind('<Enter>', lambda e=None: __display_control())
+            self.mini_player_window.bind('<Escape>', lambda e=None: __close_mini_player())
+            self.mini_player_window.mainloop()
+        else:
+            __close_mini_player()
 
     # Custom functions
     @staticmethod
