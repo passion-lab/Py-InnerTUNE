@@ -292,7 +292,7 @@ class App:
         elapsed.pack(side='right')
 
         # Bindings
-        self.tgl_play.bind('<Button-1>', lambda e=None: self._play())
+        self.tgl_play.bind('<Button-1>', lambda e=None: self._play() if self.total_songs != 0 else self._open_file())
         self.tgl_full.bind('<Enter>', lambda e=None: self.tgl_full.configure(
             fg=self.color.control_hover_fore) if self.tgl_full not in self.active_controls else None)
         self.tgl_full.bind('<Leave>', lambda e=None: self.tgl_full.configure(
@@ -476,6 +476,8 @@ class App:
 
         if not force_play:
             if not self.is_playing:
+                if self.total_songs is None:
+                    self._open_file()
                 self.play_pause.set("\ue103")
                 self.status.set("NOW PLAYING")
                 # Access the last_active_entry and change the thumb and heading style either hitting the controller
@@ -910,7 +912,10 @@ class App:
 
     # Main Menu functions
     def _open_file(self):
-        self._exit_main_menu()
+        try:
+            self._exit_main_menu()
+        except:
+            pass
         self.status.set("OPENING MUSIC FILES...")
         done = self.backend.open_files(title=f"{self.app_name} - Select music files you want to play with")
         if done:
@@ -921,6 +926,8 @@ class App:
             finally:
                 self.make_song_list(self.backend.get_current_songs())  # Then, make new entries
                 self.audio.load(file=self.backend.get_current_songs()[0]['path'])
+        else:
+            self.status.set("UPLOAD FILE(S)/FOLDER")
 
     def _open_folder(self):
         self._exit_main_menu()
@@ -934,6 +941,8 @@ class App:
             finally:
                 self.make_song_list(self.backend.get_current_songs())  # Then, make new entries
                 self.audio.load(file=self.backend.get_current_songs()[0]['path'])
+        else:
+            self.status.set("UPLOAD FILE(S)/FOLDER")
 
     def _scan_filesystem(self):
         self._exit_main_menu()
@@ -963,10 +972,11 @@ class App:
         if not self.mini_player:
             self.mini_player = True
             self.mini_player_window = window = Toplevel()
+            self.mini_player_window.focus_force()
             self.mini_player_window.overrideredirect(True)
             self.mini_player_window.attributes('-topmost', True)
             self.mini_player_window.attributes('-transparentcolor', "#000111")
-            # self.main_window.withdraw()
+            self.main_window.withdraw()
 
             # Background image
             Label(window, image=self.images['mini_player_back'], bg="#000111").pack()
@@ -974,7 +984,7 @@ class App:
             # Play/Pause button
             play = Label(window, textvariable=self.play_pause, font=self.font.iconL, fg="white", bg=self.color.ascent)
             play.place(x=257, y=9)
-            play.bind('<Button-1>', lambda e=None: self._play())
+            play.bind('<Button-1>', lambda e=None: self._play() if self.total_songs != 0 else self._open_file())
 
             # Title
             Label(window, textvariable=self.song_title, font=self.font.title, fg=self.color.head_title, bg="white").place(x=10, y=7)
@@ -993,12 +1003,13 @@ class App:
             w, h = self.main_window.winfo_screenwidth(), self.main_window.winfo_screenheight()
             w1, h1 = self.images['mini_player_back'].width(), self.images['mini_player_back'].height()
             self.mini_player_window.geometry(f"+{w - w1}+{h - h1 - 60}")
+            self.mini_player_window.bind('<Escape>', lambda e=None: __close_mini_player())
+            self.mini_player_window.bind('<Button-3>', lambda e=None: __close_mini_player())
             self.mini_player_window.mainloop()
         else:
             __close_mini_player()
 
     # Custom functions
-
     def _set_mini_player_string(self, title: str, artists: str):
         len_ttl = 20
         len_art = 40
