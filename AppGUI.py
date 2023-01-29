@@ -67,7 +67,8 @@ class App:
         self.play_pause = StringVar(value="\ue102")  # \ue102 = play; \ue103 = pause
         self.status = StringVar(value="UPLOAD FILE(S)/FOLDER")
         self.title = StringVar(value="Play your favorite tune ...")
-        self.subtitle = StringVar(value="Song artists appear here")
+        self.song_title = StringVar(value="Play your favorite tune ...")
+        self.song_artists = StringVar(value="only with InnerTune")
         self.prev_status, self.prev_title = "", ""  # Stores previous status and title before changing
         self.volume = DoubleVar(value=self.default_volume)
         self.position = DoubleVar(value=0)
@@ -89,6 +90,7 @@ class App:
         self.tgl_active_heading: Label = ...
         self.seek_bar: Scale = ...
         self.make_playing_controller()
+        self.mini_player_ctrl_frm = []
         self.thread_event = Event()
 
         self.bindings()
@@ -384,7 +386,7 @@ class App:
             # First entry added to the last_active_entry for thumb and heading change on hitting controller play button
             if i == 0:
                 self.last_active_entry = [(thumb, heading, song['title'])]
-                self.subtitle.set(song['artists'])
+                self._set_mini_player_string(title=song['title'], artists=song['artists'])
 
         # Player control buttons activate after loading the songs
         for act, btn in self.all_control_buttons:
@@ -510,7 +512,7 @@ class App:
             self.last_active_entry = [(element['th'], element['hd'], song['title'])]
             # Adds the currently selected song to the played song history list in the backend
             self.backend.set_played_song_history(song_title=song['title'])
-            self.subtitle.set(song['artists'])
+            self._set_mini_player_string(title=song['title'], artists=song['artists'])
             # Getting the current song index from the backend
             self.current_song_index = self.backend.current_songs.index(song)
 
@@ -647,6 +649,8 @@ class App:
                         "entry_heading": self.all_entries[_id][1]}
 
     def _previous(self):
+        if self.current_song_index is None:
+            self.current_song_index = 0
         required = self._load_next_prev('PREV')
         self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
                    hd=required['entry_heading'])
@@ -675,6 +679,8 @@ class App:
                 self.play_pause.set("\ue102")
 
     def _next(self):
+        if self.current_song_index is None:
+            self.current_song_index = 0
         required = self._load_next_prev('NEXT')
         self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
                    hd=required['entry_heading'])
@@ -954,9 +960,6 @@ class App:
             self.mini_player_window.destroy()
             self.mini_player = False
 
-        def __display_control():
-            pass
-
         if not self.mini_player:
             self.mini_player = True
             self.mini_player_window = window = Toplevel()
@@ -974,19 +977,41 @@ class App:
             play.bind('<Button-1>', lambda e=None: self._play())
 
             # Title
-            Label(window, textvariable=self.title, font=self.font.title, fg=self.color.head_title, bg="white").place(x=10, y=7)
-            Label(window, textvariable=self.subtitle, font=self.font.subtitle, fg=self.color.head_subtitle, bg="white").place(x=10, y=36)
+            Label(window, textvariable=self.song_title, font=self.font.title, fg=self.color.head_title, bg="white").place(x=10, y=7)
+            Label(window, textvariable=self.song_artists, font=self.font.subtitle, fg=self.color.head_subtitle, bg="white").place(x=10, y=36)
+
+            frm = Frame(window, bg="white")
+            frm.place(x=203, y=37)
+            controls = ["\ue016", "\ue017"]
+            for i, control in enumerate(controls):
+                b = Label(frm, text=control, font=self.font.iconS, fg=self.color.head_subtitle, bg='white', padx=2)
+                b.pack(side='left')
+                b.bind('<Enter>', lambda e=None, btn=b: btn.configure(fg=self.color.ascent))
+                b.bind('<Leave>', lambda e=None, btn=b: btn.configure(fg=self.color.control_fore))
+                b.bind('<Button-1>', lambda e=None, n=i: self._previous() if n == 0 else self._next())
 
             w, h = self.main_window.winfo_screenwidth(), self.main_window.winfo_screenheight()
             w1, h1 = self.images['mini_player_back'].width(), self.images['mini_player_back'].height()
             self.mini_player_window.geometry(f"+{w - w1}+{h - h1 - 60}")
-            self.mini_player_window.bind('<Enter>', lambda e=None: __display_control())
-            self.mini_player_window.bind('<Escape>', lambda e=None: __close_mini_player())
             self.mini_player_window.mainloop()
         else:
             __close_mini_player()
 
     # Custom functions
+
+    def _set_mini_player_string(self, title: str, artists: str):
+        len_ttl = 20
+        len_art = 40
+        if len(title) > len_ttl:
+            self.song_title.set(title[:len_ttl] + " ...")
+        else:
+            self.song_title.set(title)
+
+        if len(artists) > len_art:
+            self.song_artists.set(artists[:len_art] + " ...")
+        else:
+            self.song_artists.set(artists)
+
     @staticmethod
     def _get_hms(seconds: float):
         return strftime("%H:%M:%S", gmtime(seconds))
