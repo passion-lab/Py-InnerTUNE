@@ -36,6 +36,7 @@ class App:
         self.app_name = "InnerTUNE"
         self.last_X = 0
         self.last_Y = 0
+        self.volume_step: float = 0.2
         self.app_terminate: bool = False
 
         self.images = {}
@@ -868,10 +869,10 @@ class App:
             self._set_control(self.tgl_full, will_set=True)
             self.is_full = True
         else:
-            if self.is_muted:
+            if self.is_muted and lvl > 0:
                 self._set_control(self.tgl_mute, will_set=False)
                 self.is_muted = False
-            if self.is_full:
+            if self.is_full and lvl < 1:
                 self._set_control(self.tgl_full, will_set=False)
                 self.is_full = False
 
@@ -890,6 +891,16 @@ class App:
                 self._set_control(self.tgl_mute, will_set=False)
                 self.is_muted = False
             self.is_full = True
+
+    def _volume_step(self, increment: True):
+        lvl = self.volume.get()
+        lvl = lvl + self.volume_step if increment else lvl - self.volume_step
+        if lvl < 0:
+            lvl = 0
+        if lvl > 1:
+            lvl = 1
+        self.volume.set(lvl)
+        self._volume()
 
     # BACKEND function calls for Individual Entry Buttons
     def _favorite(self):
@@ -976,6 +987,7 @@ class App:
             self.mini_player_window.overrideredirect(True)
             self.mini_player_window.attributes('-topmost', True)
             self.mini_player_window.attributes('-transparentcolor', "#000111")
+            self.mini_player_window.attributes('-alpha', 1)
             self.main_window.withdraw()
 
             # Background image
@@ -999,12 +1011,13 @@ class App:
                 b.bind('<Enter>', lambda e=None, btn=b: btn.configure(fg=self.color.ascent))
                 b.bind('<Leave>', lambda e=None, btn=b: btn.configure(fg=self.color.control_fore))
                 b.bind('<Button-1>', lambda e=None, n=i: self._previous() if n == 0 else self._next())
+                # Increase and decrease volume on right-clicking next and previous button respectively
+                b.bind('<Button-3>', lambda e=None, n=i: self._volume_step(False) if n == 0 else self._volume_step(True))
 
             w, h = self.main_window.winfo_screenwidth(), self.main_window.winfo_screenheight()
             w1, h1 = self.images['mini_player_back'].width(), self.images['mini_player_back'].height()
             self.mini_player_window.geometry(f"+{w - w1}+{h - h1 - 60}")
             self.mini_player_window.bind('<Escape>', lambda e=None: __close_mini_player())
-            self.mini_player_window.bind('<Button-3>', lambda e=None: __close_mini_player())
             self.mini_player_window.mainloop()
         else:
             __close_mini_player()
