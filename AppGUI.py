@@ -37,6 +37,7 @@ class App:
         self.last_X = 0
         self.last_Y = 0
         self.volume_step: float = 0.2
+        self.mini_player_opacity: float = 1.0
         self.app_terminate: bool = False
 
         self.images = {}
@@ -1017,12 +1018,24 @@ class App:
             w, h = self.main_window.winfo_screenwidth(), self.main_window.winfo_screenheight()
             w1, h1 = self.images['mini_player_back'].width(), self.images['mini_player_back'].height()
             self.mini_player_window.geometry(f"+{w - w1}+{h - h1 - 60}")
+            # self.mini_player_window.bind('<KP_Add>', lambda e=None: self._change_opacity(window, True))
+            # self.mini_player_window.bind('<KP_Subtract>', lambda e=None: self._change_opacity(window, False))
             self.mini_player_window.bind('<Escape>', lambda e=None: __close_mini_player())
             self.mini_player_window.mainloop()
         else:
             __close_mini_player()
 
-    # Custom functions
+    def _change_opacity(self, tk_window: Tk | Toplevel, increment: True):
+        opacity = self.mini_player_opacity
+        opacity = opacity + 0.2 if increment else opacity - 0.2
+        if opacity < 0:
+            opacity = 0
+        if opacity > 1:
+            opacity = 1
+
+        tk_window.attributes('-alpha', opacity)
+        self.mini_player_opacity = opacity
+
     def _set_mini_player_string(self, title: str, artists: str):
         len_ttl = 20
         len_art = 40
@@ -1036,6 +1049,7 @@ class App:
         else:
             self.song_artists.set(artists)
 
+    # Custom functions
     @staticmethod
     def _get_hms(seconds: float):
         return strftime("%H:%M:%S", gmtime(seconds))
