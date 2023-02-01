@@ -984,11 +984,11 @@ class App:
         if not self.mini_player:
             self.mini_player = True
             self.mini_player_window = window = Toplevel()
-            self.mini_player_window.focus_force()
-            self.mini_player_window.overrideredirect(True)
-            self.mini_player_window.attributes('-topmost', True)
-            self.mini_player_window.attributes('-transparentcolor', "#000111")
-            self.mini_player_window.attributes('-alpha', 1)
+            window.focus_force()
+            window.overrideredirect(True)
+            window.attributes('-topmost', True)
+            window.attributes('-transparentcolor', "#000111")
+            window.attributes('-alpha', 1)
             self.main_window.withdraw()
 
             # Background image
@@ -1017,19 +1017,26 @@ class App:
 
             w, h = self.main_window.winfo_screenwidth(), self.main_window.winfo_screenheight()
             w1, h1 = self.images['mini_player_back'].width(), self.images['mini_player_back'].height()
-            self.mini_player_window.geometry(f"+{w - w1}+{h - h1 - 60}")
-            # self.mini_player_window.bind('<KP_Add>', lambda e=None: self._change_opacity(window, True))
-            # self.mini_player_window.bind('<KP_Subtract>', lambda e=None: self._change_opacity(window, False))
-            self.mini_player_window.bind('<Escape>', lambda e=None: __close_mini_player())
-            self.mini_player_window.mainloop()
+            window.geometry(f"+{w - w1}+{h - h1 - 60}")
+            # Binding... Press Shift+UpArrow to increase opacity
+            window.bind('<Shift-Up>', lambda e=None: self._change_opacity(window, True))
+            # Binding... Press Shift+DownArrow to decrease opacity
+            window.bind('<Shift-Down>', lambda e=None: self._change_opacity(window, False))
+            # Binding... Opacity 100% on mouse hover
+            window.bind('<Enter>', lambda e=None: window.attributes('-alpha', 1))
+            # Binding... Opacity back to what previously set on mouse leave
+            window.bind('<Leave>', lambda e=None: window.attributes('-alpha', self.mini_player_opacity))
+            # Binding... Press Esc key to exit Mini-Player and Open Main-Player
+            window.bind('<Escape>', lambda e=None: __close_mini_player())
+            window.mainloop()
         else:
             __close_mini_player()
 
     def _change_opacity(self, tk_window: Tk | Toplevel, increment: True):
         opacity = self.mini_player_opacity
         opacity = opacity + 0.2 if increment else opacity - 0.2
-        if opacity < 0:
-            opacity = 0
+        if opacity < 0.1:  # Minimum opacity is 10%
+            opacity = 0.1
         if opacity > 1:
             opacity = 1
 
