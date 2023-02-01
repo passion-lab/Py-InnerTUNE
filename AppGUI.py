@@ -402,6 +402,17 @@ class App:
         self.status.set("START YOUR INNER TUNE WITH")
         self.title.set(self.last_active_entry[0][2])  # Set the title to the first song's title as set before
 
+        # Shortcut key bindings after loading the songs
+        bindings = {
+            '<space>'     : lambda e=None: self._play() if self.total_songs != 0 else self._open_file(),
+            '<Left>'      : lambda e=None: self._previous(),
+            '<Right>'     : lambda e=None: self._next(),
+            '<Up>'        : lambda e=None: self._volume_step(True),
+            '<Down>'      : lambda e=None: self._volume_step(False),
+        }
+        for key_seq in bindings:
+            self.main_window.bind(key_seq, bindings[key_seq])
+
     def _set_control(self, widget: Label, will_set: bool = True):
         if will_set:
             self.active_controls.append(widget)
@@ -653,11 +664,14 @@ class App:
                         "entry_heading": self.all_entries[_id][1]}
 
     def _previous(self):
-        if self.current_song_index is None:
-            self.current_song_index = 0
-        required = self._load_next_prev('PREV')
-        self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
-                   hd=required['entry_heading'])
+        # If the songs are loaded, then the next button works
+        if self.total_songs != 0:
+            # Set the current song to the 1st and play the last song on pressing the previous button for the 1st time
+            if self.current_song_index is None:
+                self.current_song_index = 0
+            required = self._load_next_prev('PREV')
+            self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
+                       hd=required['entry_heading'])
 
     def _stop(self):
         # If a song is currently playing
@@ -683,11 +697,14 @@ class App:
                 self.play_pause.set("\ue102")
 
     def _next(self):
-        if self.current_song_index is None:
-            self.current_song_index = 0
-        required = self._load_next_prev('NEXT')
-        self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
-                   hd=required['entry_heading'])
+        # If the songs are loaded, then the next button works
+        if self.total_songs != 0:
+            # Set the current song to the 1st and play the 2nd song on pressing the next button for the first time
+            if self.current_song_index is None:
+                self.current_song_index = 0
+            required = self._load_next_prev('NEXT')
+            self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
+                       hd=required['entry_heading'])
 
     def _repeat(self, element: Label):
         if self.is_repeat:
