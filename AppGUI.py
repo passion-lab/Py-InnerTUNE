@@ -1018,16 +1018,23 @@ class App:
             w, h = self.main_window.winfo_screenwidth(), self.main_window.winfo_screenheight()
             w1, h1 = self.images['mini_player_back'].width(), self.images['mini_player_back'].height()
             window.geometry(f"+{w - w1}+{h - h1 - 60}")
-            # Binding... Press Shift+UpArrow to increase opacity
-            window.bind('<Shift-Up>', lambda e=None: self._change_opacity(window, True))
-            # Binding... Press Shift+DownArrow to decrease opacity
-            window.bind('<Shift-Down>', lambda e=None: self._change_opacity(window, False))
-            # Binding... Opacity 100% on mouse hover
-            window.bind('<Enter>', lambda e=None: window.attributes('-alpha', 1))
-            # Binding... Opacity back to what previously set on mouse leave
-            window.bind('<Leave>', lambda e=None: window.attributes('-alpha', self.mini_player_opacity))
-            # Binding... Press Esc key to exit Mini-Player and Open Main-Player
-            window.bind('<Escape>', lambda e=None: __close_mini_player())
+
+            bindings = {
+                '<space>': lambda e=None: self._play() if self.total_songs != 0 else self._open_file(),
+                '<Left>': lambda e=None: self._previous(),
+                '<Right>': lambda e=None: self._next(),
+                '<Up>': lambda e=None: self._volume_step(True),
+                '<Down>': lambda e=None: self._volume_step(False),
+                '<Shift-Up>': lambda e=None: self._change_opacity(window, True),
+                '<Shift-Down>': lambda e=None: self._change_opacity(window, False),
+                '<Enter>': lambda e=None: window.attributes('-alpha', 1),
+                '<Leave>': lambda e=None: window.attributes('-alpha', self.mini_player_opacity),
+                '<Button-3>': lambda e=None: __close_mini_player(),
+                '<Escape>': lambda e=None: __close_mini_player()
+            }
+            for key_seq in bindings:
+                window.bind(key_seq, bindings[key_seq])
+
             window.mainloop()
         else:
             __close_mini_player()
