@@ -121,6 +121,9 @@ class App:
         self.images["toggle_on"] = ImageTk.PhotoImage(Image.open(image_dir + 'toggle_on.png'))
         self.images["toggle_off"] = ImageTk.PhotoImage(Image.open(image_dir + 'toggle_off.png'))
         self.images["mini_player_back"] = ImageTk.PhotoImage(Image.open(image_dir + 'mini_player_back.png'))
+        self.images["button_primary"] = ImageTk.PhotoImage(Image.open(image_dir + 'button_primary.png'))
+        self.images["button_secondary"] = ImageTk.PhotoImage(Image.open(image_dir + 'button_secondary.png'))
+        self.images["button_tertiary"] = ImageTk.PhotoImage(Image.open(image_dir + 'button_tertiary.png'))
 
     def bindings(self):
         self.header_bg.bind('<Button-1>', self._save_last_click)
@@ -260,7 +263,7 @@ class App:
             btn = Label(top, text=buttons[button], font=self.font.iconM, fg=self.color.control_disabled,
                         bg=self.color.head_back)
             btn.pack(side='right')
-            # Adding actions, button labels to access later
+            # Adding actions, button labels to access later on song loading in make_song_list() method...
             self.all_control_buttons.append((button, btn))
         # row-2
         bottom = Frame(control_frame, bg=self.color.head_back)
@@ -329,14 +332,22 @@ class App:
     def make_song_list(self, songs: list[dict]):
         self.total_songs = len(songs)
 
-        commands = (
-            ["\ue107", partial(self._delete)],  # delete
-            ["\ue193", partial(self._edit_meta)],  # edit metadata
-            ["\ue110", partial(self._play_next)],  # play next
-            ["\ue142", partial(self._add_playlist)],  # add to playlist
-            ["\ue19f", partial(self._like)],  # like
-            ["\ue1f8", partial(self._favorite)]  # favorite
-        )
+        # commands = (
+        #     ["\ue107", partial(self._delete)],  # delete
+        #     ["\ue193", partial(self._edit_meta)],  # edit metadata
+        #     ["\ue110", partial(self._play_next)],  # play next
+        #     ["\ue142", partial(self._add_playlist)],  # add to playlist
+        #     ["\ue19f", partial(self._like)],  # like
+        #     ["\ue1f8", partial(self._favorite)]  # favorite
+        # )
+        commands = {
+            "delete": "\ue107",
+            "edit": "\ue193",
+            "play_next": "\ue110",
+            "add_to_playlist": "\ue142",
+            "like": "\ue19f",
+            "favorite": "\ue1f8"
+        }
         entry_box = self.make_entry_box()
         for i, song in enumerate(songs):
             details = (("ARTIST(S):", song['artists']), ("ALBUM:", song['album']), ("RELEASED:", song['release']))
@@ -364,12 +375,13 @@ class App:
                 Label(frame, text="Details not available!", font=self.font.na, fg=self.color.entry_na_fore,
                       bg=self.color.entry_back, anchor='w').pack(side='left', anchor='w')
 
-            for command in commands:
-                btn = Label(c_frm, text=command[0], font=self.font.iconM, fg=self.color.entry_btn_fore,
+            for act, icon in commands.items():
+                btn = Label(c_frm, text=icon, font=self.font.iconM, fg=self.color.entry_btn_fore,
                             bg=self.color.entry_back, anchor='e')
                 btn.pack(side='right', fill='both', anchor='e')
                 btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.entry_btn_hover_fore))
                 btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.entry_btn_fore))
+                btn.bind('<Button-1>', lambda e=None, f=frame, s=song, a=act: self._song_actions(f, s, a))
 
             # Bindings...
             frame.bind('<Enter>', lambda e=None, f=frame: self._entry_hover(f, hover=True))
@@ -626,6 +638,11 @@ class App:
                 self._shuffle(element=button)
             case "timer":
                 self._timer(element=button)
+
+    def _song_actions(self, song_widget: Frame, song: dict, action: str):
+        match action:
+            case "delete":
+                self._confirmation_windows(song)
 
     def _load_next_prev(self, parameter: Literal["NEXT", "PREV"]):
         if self.current_song_index == 0:  # If it's playing the first song...
@@ -907,8 +924,45 @@ class App:
     def _edit_meta(self):
         pass
 
-    def _delete(self):
-        pass
+    def _confirmation_windows(self, song: dict) -> bool:
+        window = Toplevel(self.main_window)
+        window.overrideredirect(True)
+        window.attributes('-alpha', 0.7)
+        window.attributes('-topmost', True)
+
+        bg_frame = Frame(window, bg=self.color.popup_back)
+        bg_frame.pack(fill='both', expand=True)
+        _ttl = Label(bg_frame, text=f"{self.app_name} - Delete Confirmation", font=self.font.popup_title,
+                     bg=self.color.ascent, fg=self.color.popup_title_fore, pady=20, padx=30)
+        _ttl.pack(side='top', fill='x')
+        # _ttl.bind('<Button-1>', lambda e=None: __close_timer_window())
+        # _ttl.bind('<Double-Button-1>', lambda e=None: __close_timer_window())
+        # bg_clr = self.color.popup_back
+        Label(bg_frame, text=f"Are you sure you want to delete the song?", font=self.font.popup_head, bg=self.color.popup_back,
+              fg=self.color.popup_head_fore, pady=15, padx=30, anchor='w').pack(fill='x', anchor='w')
+        Label(bg_frame, text=f"{song['title']}", font=self.font.popup_option, bg=self.color.popup_back,
+              fg=self.color.popup_option_fore, padx=30, anchor='w').pack(fill='x', anchor='w', padx=(10, 0))
+        Label(bg_frame, text=f"From {song['path']}", font=self.font.popup_body, bg=self.color.popup_back,
+              fg=self.color.popup_body, padx=30, anchor='w').pack(fill='x', anchor='w', padx=(10, 0), pady=(0, 15))
+
+        Canvas(bg_frame, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0).pack(fill='x')
+        btn_frame = Frame(bg_frame, bg=self.color.popup_back, padx=30, pady=15)
+        btn_frame.pack(side='bottom', fill='x')
+        btn_yes = Label(btn_frame, text="DELETE", image=self.images['button_primary'], compound='center',
+                        bg=self.color.popup_back, fg="white")
+        btn_yes.pack(side='right')
+        btn_no = Label(btn_frame, text="RETAIN", image=self.images['button_secondary'], compound='center',
+                       bg=self.color.popup_back, fg=self.color.ascent)
+        btn_no.pack(side='right')
+        btn_no.bind('<Button-1>', lambda e=None: window.destroy())
+
+        _w0, _h0, _x0, _y0 = self._get_dimension(self.main_window)
+        _w1, _h1, _, _ = self._get_dimension(window)
+        window.geometry(f'+{_x0 + _w0 // 2 - _w1 // 2}+{_y0 + _h0 // 2 - _h1 // 2}')
+        window.mainloop()
+
+    def _delete(self, e=None):
+        print("ok")
 
     # Main Menu functions
     def _open_file(self):
