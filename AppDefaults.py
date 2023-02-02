@@ -20,6 +20,7 @@ class ColorDefaults:
                 self.head_fore = "#1F1F1F"
                 self.head_subtitle = "#a8a8a8"
                 self.head_title = "#2b2b2b"
+                self.body = "grey"
                 self.play_fore = self.ascent
                 self.control_fore = "#777777"
                 self.control_disabled = "#a2a2a2"
@@ -43,6 +44,8 @@ class ColorDefaults:
                 self.popup_option_fore = "#3e3e3e"
                 self.popup_option_hover = "#c8c8c8"
                 self.popup_option_select = self.main_back
+                self.popup_body = "#636363"
+                self.popup_line = "#b7b7b7"
 
 
 class FontDefaults:
@@ -51,7 +54,7 @@ class FontDefaults:
         self.title = ('Roboto Condensed Light', 16)
         self.subtitle = ('Roboto Condensed Bold', 9)
         self.menu = ('Roboto Condensed', 11)
-        self.body = ()
+        self.body = ('Roboto Condensed', 12)
         self.heading = ('Roboto Condensed Light', 11)
         self.key = ('Roboto Condensed', 9)
         self.value = ('Roboto Condensed Light', 9)
@@ -62,3 +65,4 @@ class FontDefaults:
         self.popup_title = ('Roboto Condensed Bold', 11)
         self.popup_head = ('Roboto Condensed Light', 16)
         self.popup_option = ('Roboto Condensed', 12)
+        self.popup_body = ('Roboto Condensed', 10)
