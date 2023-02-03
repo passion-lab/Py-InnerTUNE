@@ -41,6 +41,7 @@ class App:
         self.images = {}
         self.menu_dropdown: bool = False
         self.timer_popup: bool = False
+        self.confirmation_popup: bool = False
         self.play_trigger: bool = False
         self.mini_player: bool = False
         self.is_playing: bool = False
@@ -82,6 +83,7 @@ class App:
         self.main_menu_window: Toplevel = ...
         self.menu_dropdown_window: Toplevel
         self.timer_popup_window: Toplevel = ...
+        self.confirmation_popup_window: Toplevel = ...
         self.mini_player_window: Toplevel = ...
         self.entry_box_bg: Frame = ...
         self.tgl_play: Label = ...
@@ -642,7 +644,7 @@ class App:
     def _song_actions(self, song_widget: Frame, song: dict, action: str):
         match action:
             case "delete":
-                self._confirmation_windows(song)
+                self._confirmation_windows(song, song_widget)
 
     def _load_next_prev(self, parameter: Literal["NEXT", "PREV"]):
         if self.current_song_index == 0:  # If it's playing the first song...
@@ -924,8 +926,20 @@ class App:
     def _edit_meta(self):
         pass
 
-    def _confirmation_windows(self, song: dict) -> bool:
-        window = Toplevel(self.main_window)
+    def _confirmation_windows(self, song: dict, frame: Frame):
+
+        def __proceed(ok: bool):
+            window.destroy()
+            self.confirmation_popup = False
+            if ok:
+                self._delete(song, frame)
+
+        if self.confirmation_popup:
+            self.confirmation_popup_window.destroy()
+            self.confirmation_popup = False
+
+        self.confirmation_popup = True
+        window = self.confirmation_popup_window = Toplevel(self.main_window)
         window.overrideredirect(True)
         window.attributes('-alpha', 0.7)
         window.attributes('-topmost', True)
@@ -943,7 +957,7 @@ class App:
         Label(bg_frame, text=f"{song['title']}", font=self.font.popup_option, bg=self.color.popup_back,
               fg=self.color.popup_option_fore, padx=30, anchor='w').pack(fill='x', anchor='w', padx=(10, 0))
         Label(bg_frame, text=f"From {song['path']}", font=self.font.popup_body, bg=self.color.popup_back,
-              fg=self.color.popup_body, padx=30, anchor='w').pack(fill='x', anchor='w', padx=(10, 0), pady=(0, 15))
+              fg=self.color.popup_body, padx=30, anchor='w').pack(fill='x', anchor='w', padx=(10, 0), pady=(0, 30))
 
         Canvas(bg_frame, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0).pack(fill='x')
         btn_frame = Frame(bg_frame, bg=self.color.popup_back, padx=30, pady=15)
@@ -951,18 +965,20 @@ class App:
         btn_yes = Label(btn_frame, text="DELETE", image=self.images['button_primary'], compound='center',
                         bg=self.color.popup_back, fg="white")
         btn_yes.pack(side='right')
+        btn_yes.bind('<Button-1>', lambda e=None: __proceed(True))
         btn_no = Label(btn_frame, text="RETAIN", image=self.images['button_secondary'], compound='center',
                        bg=self.color.popup_back, fg=self.color.ascent)
         btn_no.pack(side='right')
-        btn_no.bind('<Button-1>', lambda e=None: window.destroy())
+        btn_no.bind('<Button-1>', lambda e=None: __proceed(False))
 
         _w0, _h0, _x0, _y0 = self._get_dimension(self.main_window)
         _w1, _h1, _, _ = self._get_dimension(window)
         window.geometry(f'+{_x0 + _w0 // 2 - _w1 // 2}+{_y0 + _h0 // 2 - _h1 // 2}')
         window.mainloop()
 
-    def _delete(self, e=None):
-        print("ok")
+    def _delete(self, song: dict, entry_frame: Frame):
+        self.backend.delete_song(song)
+        entry_frame.pack_forget()
 
     # Main Menu functions
     def _open_file(self):
