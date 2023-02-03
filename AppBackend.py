@@ -10,7 +10,7 @@ from random import randint, shuffle
 
 from PIL import ImageTk, Image
 from mutagen.id3 import ID3
-from os import curdir, listdir, getenv, PathLike, chdir, environ
+from os import curdir, listdir, getenv, PathLike, chdir, environ, remove
 from os.path import isdir, isfile, exists, join
 
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
@@ -126,8 +126,9 @@ class Filesystem:
                 )
                 self.original_order = self.current_songs.copy()
 
-    def delete_song(self, song_id: int):
-        pass
+    def delete_song(self, song: dict):
+        remove(song['path'])
+        self.current_songs.remove(song)
 
 
 class AudioPlayer:
