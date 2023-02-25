@@ -65,6 +65,10 @@ class Filesystem:
         else:
             self.current_songs = self.original_order.copy()
 
+    def make_play_next(self, set_index: int, song: dict):
+        # Insert the specified song at the given index by popping it from its original position
+        self.current_songs.insert(set_index, self.current_songs.pop(self.current_songs.index(song)))
+
     def open_files(self, title: str = "Open files"):
         files = askopenfilenames(defaultextension="*.mp3", initialdir=self.default_folder, title=title,
                                  filetypes=[("Mp3 Sounds", "*.mp3"), ("Wave Sounds", "*.wav"),
