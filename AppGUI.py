@@ -645,6 +645,8 @@ class App:
         match action:
             case "delete":
                 self._confirmation_windows(song, song_widget)
+            case "play_next":
+                self._play_next(song)
 
     def _load_next_prev(self, parameter: Literal["NEXT", "PREV"]):
         if self.current_song_index == 0:  # If it's playing the first song...
@@ -920,8 +922,9 @@ class App:
     def _add_playlist(self):
         pass
 
-    def _play_next(self):
-        pass
+    def _play_next(self, song_dict: dict):
+        # Make the selected song after the current song in the current_song dict
+        self.backend.make_play_next(set_index=self.current_song_index + 1, song=song_dict)
 
     def _edit_meta(self):
         pass
@@ -952,7 +955,7 @@ class App:
         # _ttl.bind('<Button-1>', lambda e=None: __close_timer_window())
         # _ttl.bind('<Double-Button-1>', lambda e=None: __close_timer_window())
         # bg_clr = self.color.popup_back
-        Label(bg_frame, text=f"Are you sure you want to delete the song?", font=self.font.popup_head, bg=self.color.popup_back,
+        Label(bg_frame, text=f"Delete the song permanently from the storage?", font=self.font.popup_head, bg=self.color.popup_back,
               fg=self.color.popup_head_fore, pady=15, padx=30, anchor='w').pack(fill='x', anchor='w')
         Label(bg_frame, text=f"{song['title']}", font=self.font.popup_option, bg=self.color.popup_back,
               fg=self.color.popup_option_fore, padx=30, anchor='w').pack(fill='x', anchor='w', padx=(10, 0))
