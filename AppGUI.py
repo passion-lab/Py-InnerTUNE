@@ -930,20 +930,16 @@ class App:
     def _favorite(self, song_detail: dict, icon_label):
         if self.backend.set_favorite_songs(song_detail):
             self._set_control(widget=icon_label)
-            print(self.backend.favorite_songs)
         else:
             self.backend.remove_favorite_song(song_detail)
             self._set_control(widget=icon_label, will_set=False)
-            print(self.backend.favorite_songs)
 
     def _like(self, song_detail: dict, icon_label):
         if self.backend.set_liked_songs(song_detail):
             self._set_control(widget=icon_label)
-            print(self.backend.liked_songs)
         else:
             self.backend.remove_liked_song(song_detail)
             self._set_control(widget=icon_label, will_set=False)
-            print(self.backend.liked_songs)
 
     def _add_playlist(self):
         pass
