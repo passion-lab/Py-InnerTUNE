@@ -660,8 +660,7 @@ class App:
             case "favorite":
                 self._favorite(song, song_widget.winfo_children()[0].winfo_children()[5])
             case "like":
-                pass
-                # self._like(song, song_widget)
+                self._like(song, song_widget.winfo_children()[0].winfo_children()[4])
 
     def _load_next_prev(self, parameter: Literal["NEXT", "PREV"]):
         if self.current_song_index == 0:  # If it's playing the first song...
@@ -938,7 +937,13 @@ class App:
             print(self.backend.favorite_songs)
 
     def _like(self, song_detail: dict, icon_label):
-        pass
+        if self.backend.set_liked_songs(song_detail):
+            self._set_control(widget=icon_label)
+            print(self.backend.liked_songs)
+        else:
+            self.backend.remove_liked_song(song_detail)
+            self._set_control(widget=icon_label, will_set=False)
+            print(self.backend.liked_songs)
 
     def _add_playlist(self):
         pass
