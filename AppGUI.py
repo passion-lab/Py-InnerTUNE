@@ -3,7 +3,7 @@ from tkinter import (
     Tk, Toplevel,
     Frame, Canvas, Label, Scale, Radiobutton, Entry,
     PhotoImage, Scrollbar,
-    StringVar, DoubleVar, IntVar
+    StringVar, DoubleVar, IntVar, Widget
 )
 from tkinter.ttk import Sizegrip
 # from tkinter.font import Font
@@ -381,8 +381,8 @@ class App:
                 btn = Label(c_frm, text=icon, font=self.font.iconM, fg=self.color.entry_btn_fore,
                             bg=self.color.entry_back, anchor='e')
                 btn.pack(side='right', fill='both', anchor='e')
-                btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.entry_btn_hover_fore))
-                btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.entry_btn_fore))
+                btn.bind('<Enter>', lambda e=None, b=btn: b.configure(fg=self.color.entry_btn_hover_fore) if b not in self.active_controls else None)
+                btn.bind('<Leave>', lambda e=None, b=btn: b.configure(fg=self.color.entry_btn_fore) if b not in self.active_controls else None)
                 btn.bind('<Button-1>', lambda e=None, f=frame, s=song, a=act: self._song_actions(f, s, a))
 
             # Bindings...
@@ -657,6 +657,11 @@ class App:
                 self._confirmation_windows(song, song_widget)
             case "play_next":
                 self._play_next(song)
+            case "favorite":
+                self._favorite(song, song_widget.winfo_children()[0].winfo_children()[5])
+            case "like":
+                pass
+                # self._like(song, song_widget)
 
     def _load_next_prev(self, parameter: Literal["NEXT", "PREV"]):
         if self.current_song_index == 0:  # If it's playing the first song...
@@ -923,10 +928,16 @@ class App:
             self.is_full = True
 
     # BACKEND function calls for Individual Entry Buttons
-    def _favorite(self):
-        pass
+    def _favorite(self, song_detail: dict, icon_label):
+        if self.backend.set_favorite_songs(song_detail):
+            self._set_control(widget=icon_label)
+            print(self.backend.favorite_songs)
+        else:
+            self.backend.remove_favorite_song(song_detail)
+            self._set_control(widget=icon_label, will_set=False)
+            print(self.backend.favorite_songs)
 
-    def _like(self):
+    def _like(self, song_detail: dict, icon_label):
         pass
 
     def _add_playlist(self):
