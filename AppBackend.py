@@ -30,6 +30,8 @@ class Filesystem:
         ]
         self.original_order: list = []  # Same list as above for backup/reset after toggling off the shuffle mode
         self.played_songs_history: list = []
+        self.favorite_songs: list = []
+        self.liked_songs: list = []
 
     def get_default(self):
         return self.default_folder
@@ -58,6 +60,28 @@ class Filesystem:
         :rtype: None
         """
         self.played_songs_history.append(song_title)
+
+    def set_favorite_songs(self, song: dict):
+        if song not in self.favorite_songs:
+            self.favorite_songs.append(song)
+            return True
+        else:
+            return False
+
+    def remove_favorite_song(self, song: dict):
+        # Should be called when set_favorite_songs method returns False
+        self.favorite_songs.remove(song)
+
+    def set_liked_songs(self, song: dict):
+        if song not in self.liked_songs:
+            self.liked_songs.append(song)
+            return True
+        else:
+            return False
+
+    def remove_liked_song(self, song: dict):
+        # Should be called when set_liked_songs method returns False
+        self.liked_songs.remove(song)
 
     def make_shuffle(self, mode: bool = True):
         if mode:
