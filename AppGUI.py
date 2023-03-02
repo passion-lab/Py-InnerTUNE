@@ -568,8 +568,11 @@ class App:
                             _reset = True
                         # 3. Before a minute of finishing the song, it'll display the upcoming song
                         elif _total_length - 60 <= _cur_pos and not _change:
-                            _detail = self.backend.get_song(self._load_next_prev('NEXT')['id'])
-                            self._status_change("UPCOMING SONG...", _detail['title'])
+                            if self.current_song_index != self.total_songs - 1:
+                                _detail = self.backend.get_song(self._load_next_prev('NEXT')['id'])
+                                self._status_change("UPCOMING SONG...", _detail['title'])
+                            else:
+                                self._status_change("ENDING CURRENT PLAYLIST...", "You're listening The last song")
                             _change, _reset = True, False
                         # 2. After 10 seconds, it'll display the now playing song again
                         elif 75.0 >= _cur_pos >= 70.5 and not _reset:
@@ -598,11 +601,18 @@ class App:
                                     self._close()
 
                             # Otherwise loads the next song for autoplay if repeat mode is off
+                            # TODO: Playlist repeat mode will have to be added
                             if not self.is_repeat:
-                                require = self._load_next_prev('NEXT')
-                                self._play(force_play=True, song_id=require['id'], th=require['entry_thumb'],
-                                           hd=require['entry_heading'])
-                                self.current_song_index += 1
+                                if self.current_song_index == self.total_songs - 1:
+                                    self._stop()
+                                    self.status.set("PLAYLIST OVER")
+                                    self.title.set("You may like to play a different one")
+                                    self._set_mini_player_string("Change your listening flavour", "Full playlist listened")
+                                else:
+                                    require = self._load_next_prev('NEXT')
+                                    self._play(force_play=True, song_id=require['id'], th=require['entry_thumb'],
+                                               hd=require['entry_heading'])
+                                    self.current_song_index += 1
                         # On pausing a song do nothing
                         # else: pass
                 # If stop button is fired
