@@ -132,7 +132,6 @@ class App:
     def bindings(self):
         self.header_bg.bind('<Button-1>', self._save_last_click)
         self.header_bg.bind('<B1-Motion>', self._drag_window)
-        self.main_window.bind('<Escape>', lambda e=None: self.main_window.destroy())
 
     def _save_last_click(self, click):
         self.last_X, self.last_Y = click.x, click.y
