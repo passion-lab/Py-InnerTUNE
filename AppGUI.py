@@ -3,7 +3,7 @@ from tkinter import (
     Tk, Toplevel,
     Frame, Canvas, Label, Scale, Radiobutton, Entry,
     PhotoImage, Scrollbar,
-    StringVar, DoubleVar, IntVar, Widget
+    StringVar, DoubleVar, IntVar, BaseWidget
 )
 from tkinter.ttk import Sizegrip
 # from tkinter.font import Font
@@ -42,6 +42,7 @@ class App:
         self.menu_dropdown: bool = False
         self.timer_popup: bool = False
         self.confirmation_popup: bool = False
+        self.meta_editor_popup: bool = False
         self.play_trigger: bool = False
         self.mini_player: bool = False
         self.is_playing: bool = False
@@ -84,6 +85,7 @@ class App:
         self.menu_dropdown_window: Toplevel
         self.timer_popup_window: Toplevel = ...
         self.confirmation_popup_window: Toplevel = ...
+        self.meta_editor_popup_window: Toplevel = ...
         self.mini_player_window: Toplevel = ...
         self.entry_box_bg: Frame = ...
         self.tgl_play: Label = ...
@@ -661,6 +663,8 @@ class App:
                 self._favorite(song, song_widget.winfo_children()[0].winfo_children()[5])
             case "like":
                 self._like(song, song_widget.winfo_children()[0].winfo_children()[4])
+            case "edit":
+                self._edit_meta(song)
 
     def _load_next_prev(self, parameter: Literal["NEXT", "PREV"]):
         if self.current_song_index == 0:  # If it's playing the first song...
@@ -948,8 +952,102 @@ class App:
         # Make the selected song after the current song in the current_song dict
         self.backend.make_play_next(set_index=self.current_song_index + 1, song=song_dict)
 
-    def _edit_meta(self):
-        pass
+    def _edit_meta(self, song: dict):
+        if self.meta_editor_popup:
+            self.meta_editor_popup_window.destroy()
+            self.meta_editor_popup = False
+
+        def __proceed(ok: bool):
+            window.destroy()
+            self.confirmation_popup = False
+            if ok:
+                pass
+
+        self.meta_editor_popup = True
+        window = self.meta_editor_popup_window = Toplevel(self.main_window)
+        window.overrideredirect(True)
+        window.attributes('-alpha', 0.8)
+        window.attributes('-topmost', True)
+
+        bg_frame = Frame(window, bg=self.color.popup_back)
+        bg_frame.pack(fill='both', expand=True)
+
+        # Heading and Titles
+        _ttl = Label(bg_frame, text=f"{self.app_name} - Song's Metadata Editor", font=self.font.popup_title,
+                     bg=self.color.ascent, fg=self.color.popup_title_fore, pady=20, padx=30)
+        _ttl.pack(side='top', fill='x')
+        Label(bg_frame, text=f"Know more about the song? Save it!", font=self.font.popup_head, bg=self.color.popup_back,
+              fg=self.color.popup_head_fore, pady=15, padx=30, anchor='w').pack(fill='x', anchor='w')
+        Label(bg_frame, text=f"Editing {song['title']}", font=self.font.popup_option, bg=self.color.popup_back,
+              fg=self.color.popup_option_fore, padx=30, anchor='w').pack(fill='x', anchor='w', padx=(10, 0))
+        Label(bg_frame, text=f"From {song['path']}", font=self.font.popup_body, bg=self.color.popup_back,
+              fg=self.color.popup_body, padx=30, anchor='w').pack(fill='x', anchor='w', padx=(10, 0), pady=(0, 30))
+
+        # New Fields and Entries
+        new_title = Entry(bg_frame, bg=self.color.popup_back, font=self.font.popup_entry, border=0, selectbackground=self.color.select_back)
+        new_title.pack(fill='x', anchor='w', padx=(40, 30), pady=0)
+        new_title.insert(0, song['title'])
+        l1 = Canvas(bg_frame, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0)
+        l1.pack(fill='x', padx=(40, 30))
+        Label(bg_frame, bg=self.color.popup_back, fg=self.color.popup_body, font=self.font.popup_field, text="Title",
+              anchor='w').pack(fill='x', padx=(40, 30), pady=(0, 10))
+
+        new_artists = Entry(bg_frame, bg=self.color.popup_back, font=self.font.popup_entry, border=0, selectbackground=self.color.select_back)
+        new_artists.pack(fill='x', anchor='w', padx=(40, 30), pady=0)
+        new_artists.insert(0, song['artists'])
+        l2 = Canvas(bg_frame, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0)
+        l2.pack(fill='x', padx=(40, 30))
+        Label(bg_frame, bg=self.color.popup_back, fg=self.color.popup_body, font=self.font.popup_field, text="Artists",
+              anchor='w').pack(fill='x', padx=(40, 30), pady=(0, 10))
+
+        _tc = Frame(bg_frame, bg=self.color.popup_back)
+        _tc.pack(fill='x', padx=(40, 30))
+        _tc.columnconfigure(0, weight=1)
+        _tc.columnconfigure(1, weight=1)
+        _lf = Frame(_tc, bg=self.color.popup_back)
+        _lf.grid(row=0, column=0)
+        _rf = Frame(_tc, bg=self.color.popup_back)
+        _rf.grid(row=0, column=1)
+
+        new_album = Entry(_lf, bg=self.color.popup_back, font=self.font.popup_entry, border=0, selectbackground=self.color.select_back)
+        new_album.pack(fill='x', anchor='w', padx=(0, 10))
+        new_album.insert(0, song['album'])
+        l3 = Canvas(_lf, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0)
+        l3.pack(fill='x', padx=(0, 10))
+        Label(_lf, bg=self.color.popup_back, fg=self.color.popup_body, font=self.font.popup_field, text="Album",
+              anchor='w').pack(fill='x', pady=(0, 30))
+
+        new_year = Entry(_rf, bg=self.color.popup_back, font=self.font.popup_entry, border=0, selectbackground=self.color.select_back)
+        new_year.pack(fill='x', anchor='w', padx=(0, 10))
+        new_year.insert(0, song['release'])
+        l4 = Canvas(_rf, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0)
+        l4.pack(fill='x', padx=(0, 10))
+        Label(_rf, bg=self.color.popup_back, fg=self.color.popup_body, font=self.font.popup_field, text="Released Year",
+              anchor='w').pack(fill='x', pady=(0, 30))
+
+        for i, item in enumerate([[new_title, l1], [new_artists, l2], [new_album, l3], [new_year, l4]]):
+            item[0].bind('<Enter>', lambda e=None, ln=item[1]: ln.configure(bg=self.color.enabled))
+            item[0].bind('<Leave>', lambda e=None, ln=item[1]: ln.configure(bg=self.color.popup_line))
+
+        # Footer Buttons
+        Canvas(bg_frame, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0).pack(fill='x')
+        btn_frame = Frame(bg_frame, bg=self.color.popup_back, padx=30, pady=15)
+        btn_frame.pack(side='bottom', fill='x')
+        btn_yes = Label(btn_frame, text="S A V E", image=self.images['button_primary'], compound='center',
+                        bg=self.color.popup_back, fg="white")
+        btn_yes.pack(side='right')
+        btn_yes.bind('<Button-1>', lambda e=None: __proceed(True))
+        btn_no = Label(btn_frame, text="CANCEL", image=self.images['button_secondary'], compound='center',
+                       bg=self.color.popup_back, fg=self.color.ascent)
+        btn_no.pack(side='right')
+        btn_no.bind('<Button-1>', lambda e=None: __proceed(False))
+
+        window.bind('<Return>', lambda e=None: __proceed(True))
+        window.bind('<Escape>', lambda e=None: __proceed(False))
+        _w0, _h0, _x0, _y0 = self._get_dimension(self.main_window)
+        _w1, _h1, _, _ = self._get_dimension(window)
+        window.geometry(f'+{_x0 + _w0 // 2 - _w1 // 2}+{_y0 + _h0 // 2 - _h1 // 2}')
+        window.mainloop()
 
     def _confirmation_windows(self, song: dict, frame: Frame):
 
@@ -987,7 +1085,7 @@ class App:
         Canvas(bg_frame, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0).pack(fill='x')
         btn_frame = Frame(bg_frame, bg=self.color.popup_back, padx=30, pady=15)
         btn_frame.pack(side='bottom', fill='x')
-        btn_yes = Label(btn_frame, text="DELETE", image=self.images['button_primary'], compound='center',
+        btn_yes = Label(btn_frame, text="D E L E T E", image=self.images['button_primary'], compound='center',
                         bg=self.color.popup_back, fg="white")
         btn_yes.pack(side='right')
         btn_yes.bind('<Button-1>', lambda e=None: __proceed(True))
