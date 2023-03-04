@@ -3,7 +3,7 @@ from tkinter import (
     Tk, Toplevel,
     Frame, Canvas, Label, Scale, Radiobutton, Entry,
     PhotoImage, Scrollbar,
-    StringVar, DoubleVar, IntVar, BaseWidget
+    StringVar, DoubleVar, IntVar
 )
 from tkinter.ttk import Sizegrip
 # from tkinter.font import Font
