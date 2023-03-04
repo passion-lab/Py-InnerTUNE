@@ -12,6 +12,8 @@ class ColorDefaults:
             case "white":
                 self.disabled = "#c7c7c7"
                 self.enabled = self.ascent
+                self.select_back = self.ascent
+                self.select_fore = "#c4c4c4"
 
                 self.main_back = "white"
                 self.main_fore = "black"
@@ -66,3 +68,5 @@ class FontDefaults:
         self.popup_head = ('Roboto Condensed Light', 16)
         self.popup_option = ('Roboto Condensed', 12)
         self.popup_body = ('Roboto Condensed', 10)
+        self.popup_field = ('Roboto Condensed Light Italic', 10)
+        self.popup_entry = ('Roboto Condensed Light', 12)
