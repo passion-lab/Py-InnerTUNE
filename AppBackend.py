@@ -9,7 +9,7 @@ from tkinter.filedialog import askopenfilenames, askdirectory
 from random import randint, shuffle
 
 from PIL import ImageTk, Image
-from mutagen.id3 import ID3
+from mutagen.id3 import ID3, TIT2, TPE1, TALB, TDRC
 from os import curdir, listdir, getenv, PathLike, chdir, environ, remove
 from os.path import isdir, isfile, exists, join
 
@@ -153,6 +153,15 @@ class Filesystem:
                     {"id": randint(10000, 99999), "path": file, "title": title, "artists": artists, "album": album, "release": year}
                 )
                 self.original_order = self.current_songs.copy()
+
+    def save_music_info(self, song_path: str, **new_info):
+        tag = ID3(song_path)
+        # TODO: Have to Fix
+        tag.add(TIT2(text=new_info['title']))
+        tag.add(TPE1(text=new_info['artists']))
+        tag.add(TALB(text=new_info['album']))
+        tag.add(TDRC(text=new_info['year']))
+        tag.save()
 
     def delete_song(self, song: dict):
         remove(song['path'])
