@@ -960,7 +960,8 @@ class App:
             window.destroy()
             self.confirmation_popup = False
             if ok:
-                pass
+                self.backend.save_music_info(song_path=song['path'], title=new_title.get(),  artists=new_artists.get(),
+                                             album=new_album.get(), year=new_year.get())
 
         self.meta_editor_popup = True
         window = self.meta_editor_popup_window = Toplevel(self.main_window)
@@ -970,7 +971,6 @@ class App:
 
         bg_frame = Frame(window, bg=self.color.popup_back)
         bg_frame.pack(fill='both', expand=True)
-
         # Heading and Titles
         _ttl = Label(bg_frame, text=f"{self.app_name} - Song's Metadata Editor", font=self.font.popup_title,
                      bg=self.color.ascent, fg=self.color.popup_title_fore, pady=20, padx=30)
@@ -983,17 +983,22 @@ class App:
               fg=self.color.popup_body, padx=30, anchor='w').pack(fill='x', anchor='w', padx=(10, 0), pady=(0, 30))
 
         # New Fields and Entries
-        new_title = Entry(bg_frame, bg=self.color.popup_back, font=self.font.popup_entry, border=0, selectbackground=self.color.select_back)
-        new_title.pack(fill='x', anchor='w', padx=(40, 30), pady=0)
-        new_title.insert(0, song['title'])
+        new_title = StringVar(value=song['title'])
+        new_artists = StringVar(value=song['artists'])
+        new_album = StringVar(value=song['album'])
+        new_year = StringVar(value=song['release'])
+
+        title = Entry(bg_frame, bg=self.color.popup_back, font=self.font.popup_entry, border=0,
+                      selectbackground=self.color.select_back, textvariable=new_title)
+        title.pack(fill='x', anchor='w', padx=(40, 30), pady=0)
         l1 = Canvas(bg_frame, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0)
         l1.pack(fill='x', padx=(40, 30))
         Label(bg_frame, bg=self.color.popup_back, fg=self.color.popup_body, font=self.font.popup_field, text="Title",
               anchor='w').pack(fill='x', padx=(40, 30), pady=(0, 10))
 
-        new_artists = Entry(bg_frame, bg=self.color.popup_back, font=self.font.popup_entry, border=0, selectbackground=self.color.select_back)
-        new_artists.pack(fill='x', anchor='w', padx=(40, 30), pady=0)
-        new_artists.insert(0, song['artists'])
+        artists = Entry(bg_frame, bg=self.color.popup_back, font=self.font.popup_entry, border=0,
+                        selectbackground=self.color.select_back, textvariable=new_artists)
+        artists.pack(fill='x', anchor='w', padx=(40, 30), pady=0)
         l2 = Canvas(bg_frame, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0)
         l2.pack(fill='x', padx=(40, 30))
         Label(bg_frame, bg=self.color.popup_back, fg=self.color.popup_body, font=self.font.popup_field, text="Artists",
@@ -1008,23 +1013,23 @@ class App:
         _rf = Frame(_tc, bg=self.color.popup_back)
         _rf.grid(row=0, column=1)
 
-        new_album = Entry(_lf, bg=self.color.popup_back, font=self.font.popup_entry, border=0, selectbackground=self.color.select_back)
-        new_album.pack(fill='x', anchor='w', padx=(0, 10))
-        new_album.insert(0, song['album'])
+        album = Entry(_lf, bg=self.color.popup_back, font=self.font.popup_entry, border=0,
+                      selectbackground=self.color.select_back, textvariable=new_album)
+        album.pack(fill='x', anchor='w', padx=(0, 10))
         l3 = Canvas(_lf, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0)
         l3.pack(fill='x', padx=(0, 10))
         Label(_lf, bg=self.color.popup_back, fg=self.color.popup_body, font=self.font.popup_field, text="Album",
               anchor='w').pack(fill='x', pady=(0, 30))
 
-        new_year = Entry(_rf, bg=self.color.popup_back, font=self.font.popup_entry, border=0, selectbackground=self.color.select_back)
-        new_year.pack(fill='x', anchor='w', padx=(0, 10))
-        new_year.insert(0, song['release'])
+        year = Entry(_rf, bg=self.color.popup_back, font=self.font.popup_entry, border=0,
+                     selectbackground=self.color.select_back, textvariable=new_year)
+        year.pack(fill='x', anchor='w', padx=(0, 10))
         l4 = Canvas(_rf, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0)
         l4.pack(fill='x', padx=(0, 10))
         Label(_rf, bg=self.color.popup_back, fg=self.color.popup_body, font=self.font.popup_field, text="Released Year",
               anchor='w').pack(fill='x', pady=(0, 30))
 
-        for i, item in enumerate([[new_title, l1], [new_artists, l2], [new_album, l3], [new_year, l4]]):
+        for i, item in enumerate([[title, l1], [artists, l2], [album, l3], [year, l4]]):
             item[0].bind('<Enter>', lambda e=None, ln=item[1]: ln.configure(bg=self.color.enabled))
             item[0].bind('<Leave>', lambda e=None, ln=item[1]: ln.configure(bg=self.color.popup_line))
 
