@@ -43,6 +43,7 @@ class App:
         self.images = {}
         self.menu_dropdown: bool = False
         self.timer_popup: bool = False
+        self.now_playing: bool = False
         self.play_trigger: bool = False
         self.mini_player: bool = False
         self.is_playing: bool = False
@@ -71,6 +72,8 @@ class App:
         self.title = StringVar(value="Play your favorite tune ...")
         self.song_title = StringVar(value="Play your favorite tune ...")
         self.song_artists = StringVar(value="only with InnerTune")
+        self.now_title = StringVar(value="Play your favorite tune ...")
+        self.now_artists = StringVar(value="only with InnerTune")
         self.prev_status, self.prev_title = "", ""  # Stores previous status and title before changing
         self.volume = DoubleVar(value=self.default_volume)
         self.position = DoubleVar(value=0)
@@ -127,6 +130,8 @@ class App:
     def bindings(self):
         self.header_bg.bind('<Button-1>', self._save_last_click)
         self.header_bg.bind('<B1-Motion>', self._drag_window)
+        self.main_window.bind('<f>', lambda e=None: self._now_playing_screen())
+        self.main_window.bind('<F5>', lambda e=None: self._now_playing_screen())
         self.main_window.bind('<Escape>', lambda e=None: self.main_window.destroy())
 
     def _save_last_click(self, click):
@@ -1055,6 +1060,37 @@ class App:
             window.mainloop()
         else:
             __close_mini_player()
+
+    def _now_playing_screen(self):
+        if not self.now_playing:
+            self.now_playing = True
+            for frm in self.main_bg.winfo_children():
+                frm.pack_forget()
+        else:
+            self.now_playing = False
+            for item in self.main_bg.winfo_children():
+                item.pack_forget()
+            self.header_bg.pack(side='top', fill='x')
+            self.body_bg.pack(side='top', fill='both', expand=True)
+            return None
+
+        self.main_bg.configure(bg=self.color.now_playing_back)
+        Label(self.main_bg, textvariable=self.song_artists, fg=self.color.now_playing_subtitle,
+              font=self.font.now_playing_subtitle, bg=self.color.now_playing_back).pack(side='bottom', pady=(0, 20))
+        Label(self.main_bg, textvariable=self.song_title, fg=self.color.now_playing_title, font=self.font.now_playing_title,
+              bg=self.color.now_playing_back).pack(side='bottom', pady=(20, 0))  # f48a98
+        Canvas(self.main_bg, bg='#f0576a', border=0, highlightthickness=0, height=1).pack(side='bottom', fill='x', padx=200)
+        btn_frame = Frame(self.main_bg, bg=self.color.now_playing_back)
+        btn_frame.pack(side='bottom', pady=5)
+        prv = Label(btn_frame, text='\ue100', fg=self.color.now_playing_btnS, bg=self.color.now_playing_back, font=self.font.iconS)
+        prv.pack(side='left')
+        prv.bind('<Button-1>', lambda e=None: self._previous())
+        ply = Label(btn_frame, textvariable=self.play_pause, fg=self.color.now_playing_btnP, bg=self.color.now_playing_back, font=self.font.iconL)
+        ply.pack(side='left', padx=20)
+        ply.bind('<Button-1>', lambda e=None: self._play())
+        nxt = Label(btn_frame, text='\ue101', fg=self.color.now_playing_btnS, bg=self.color.now_playing_back, font=self.font.iconS)
+        nxt.pack(side='left')
+        nxt.bind('<Button-1>', lambda e=None: self._next())
 
     def _change_opacity(self, tk_window: Tk | Toplevel, increment: True):
         opacity = self.mini_player_opacity
