@@ -1091,15 +1091,15 @@ class App:
         self.main_bg.configure(bg=self.color.now_playing_back)
         status_frame = Frame(self.main_bg, bg=self.color.now_playing_back)
         status_frame.pack(side='top', padx=30, pady=20, anchor='w')
-        self.now_status = Label(status_frame, textvariable=self.status, font=self.font.subtitle,
-                                fg=self.color.head_subtitle, bg=self.color.now_playing_back)
-        self.now_info = Label(status_frame, textvariable=self.title, font=self.font.title,
-                              fg=self.color.head_title, bg=self.color.now_playing_back)
+        self.now_status = Label(status_frame, textvariable=self.status, font=self.font.now_playing_status,
+                                fg=self.color.now_playing_status, bg=self.color.now_playing_back)
+        self.now_info = Label(status_frame, textvariable=self.title, font=self.font.now_playing_info,
+                              fg=self.color.now_playing_info, bg=self.color.now_playing_back)
 
         Label(self.main_bg, textvariable=self.now_artists, fg=self.color.now_playing_subtitle,
               font=self.font.now_playing_subtitle, bg=self.color.now_playing_back).pack(side='bottom', pady=(0, 20))
         Label(self.main_bg, textvariable=self.now_title, fg=self.color.now_playing_title, font=self.font.now_playing_title,
-              bg=self.color.now_playing_back).pack(side='bottom', pady=(20, 0))  # f48a98
+              bg=self.color.now_playing_back).pack(side='bottom', pady=(20, 0))
         Canvas(self.main_bg, bg='#f0576a', border=0, highlightthickness=0, height=1).pack(side='bottom', fill='x', padx=200)
         btn_frame = Frame(self.main_bg, bg=self.color.now_playing_back)
         btn_frame.pack(side='bottom', pady=5)
