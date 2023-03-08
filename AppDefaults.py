@@ -49,6 +49,8 @@ class ColorDefaults:
                 self.now_playing_subtitle = "#d4d4d4"
                 self.now_playing_btnP = "#d4d4d4"
                 self.now_playing_btnS = "#c7c7c7"
+                self.now_playing_status = "#f48a98"
+                self.now_playing_info = "#d9132c"
 
 
 class FontDefaults:
@@ -70,3 +72,5 @@ class FontDefaults:
         self.popup_option = ('Roboto Condensed', 12)
         self.now_playing_title = ('Roboto Condensed Light', 18)
         self.now_playing_subtitle = ('Roboto Condensed Light Italic', 10)
+        self.now_playing_status = ('Roboto Condensed Bold', 11)
+        self.now_playing_info = ('Roboto Condensed', 13)
