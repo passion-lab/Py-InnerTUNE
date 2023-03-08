@@ -94,6 +94,8 @@ class App:
         self.tgl_full: Label = ...
         self.tgl_active_heading: Label = ...
         self.seek_bar: Scale = ...
+        self.now_status: Label = ...
+        self.now_info: Label = ...
         self.make_playing_controller()
         self.mini_player_ctrl_frm = []
         self.thread_event = Event()
@@ -565,6 +567,8 @@ class App:
             else:
                 # If a song is playing or pausing
                 if self.is_playing:
+                    if self.now_playing:
+                        self.now_status.pack(anchor='w')
                     # When a song is now playing or resuming
                     if self.audio.currently_playing():
                         _cur_pos = self.audio.current_position() / 1000
@@ -618,6 +622,8 @@ class App:
                     self.elapsed.set("00:00:00")
                     self.position.set(0.0)
                     self.tgl_play.configure(text="\ue102")
+                    if self.now_playing:
+                        self.now_status.pack_forget()
 
             sleep(0.5)
 
@@ -630,9 +636,13 @@ class App:
             self.prev_status, self.prev_title = self.status.get(), self.title.get()
             self.status.set(temp_status)
             self.title.set(temp_title)
+            if self.now_playing:
+                self.now_info.pack(anchor='w')
         else:
             self.status.set(self.prev_status)
             self.title.set(self.prev_title)
+            if self.now_playing:
+                self.now_info.pack_forget()
 
     def _control_actions(self, button: Label, action: str):
         match action:
@@ -1079,6 +1089,13 @@ class App:
             return None
 
         self.main_bg.configure(bg=self.color.now_playing_back)
+        status_frame = Frame(self.main_bg, bg=self.color.now_playing_back)
+        status_frame.pack(side='top', padx=30, pady=20, anchor='w')
+        self.now_status = Label(status_frame, textvariable=self.status, font=self.font.subtitle,
+                                fg=self.color.head_subtitle, bg=self.color.now_playing_back)
+        self.now_info = Label(status_frame, textvariable=self.title, font=self.font.title,
+                              fg=self.color.head_title, bg=self.color.now_playing_back)
+
         Label(self.main_bg, textvariable=self.now_artists, fg=self.color.now_playing_subtitle,
               font=self.font.now_playing_subtitle, bg=self.color.now_playing_back).pack(side='bottom', pady=(0, 20))
         Label(self.main_bg, textvariable=self.now_title, fg=self.color.now_playing_title, font=self.font.now_playing_title,
