@@ -44,6 +44,7 @@ class App:
         self.images = {}
         self.menu_dropdown: bool = False
         self.timer_popup: bool = False
+        self.now_playing: bool = False
         self.play_trigger: bool = False
         self.mini_player: bool = False
         self.is_playing: bool = False
@@ -73,6 +74,8 @@ class App:
         self.title = StringVar(value="Play your favorite tune ...")
         self.song_title = StringVar(value="Play your favorite tune ...")
         self.song_artists = StringVar(value="only with InnerTune")
+        self.now_title = StringVar(value="Play your favorite tune ...")
+        self.now_artists = StringVar(value="only with InnerTune")
         self.prev_status, self.prev_title = "", ""  # Stores previous status and title before changing
         self.volume = DoubleVar(value=self.default_volume)
         self.position = DoubleVar(value=0)
@@ -93,6 +96,8 @@ class App:
         self.tgl_full: Label = ...
         self.tgl_active_heading: Label = ...
         self.seek_bar: Scale = ...
+        self.now_status: Label = ...
+        self.now_info: Label = ...
         self.make_playing_controller()
         self.mini_player_ctrl_frm = []
         self.thread_event = Event()
@@ -129,6 +134,8 @@ class App:
     def bindings(self):
         self.header_bg.bind('<Button-1>', self._save_last_click)
         self.header_bg.bind('<B1-Motion>', self._drag_window)
+        self.main_window.bind('<f>', lambda e=None: self._now_playing_screen())
+        self.main_window.bind('<F5>', lambda e=None: self._now_playing_screen())
         self.main_window.bind('<Escape>', lambda e=None: self.main_window.destroy())
 
     def _save_last_click(self, click):
@@ -331,6 +338,7 @@ class App:
         return entry_box
 
     def make_song_list(self, songs: list[dict]):
+        __first_artists = ""
         self.total_songs = len(songs)
 
         commands = (
@@ -391,6 +399,7 @@ class App:
             if i == 0:
                 self.last_active_entry = [(thumb, heading, song['title'], song['cover'])]
                 self._set_mini_player_string(title=song['title'], artists=song['artists'])
+                __first_artists = song['artists']
 
         # Player control buttons activate after loading the songs
         for act, btn in self.all_control_buttons:
@@ -403,6 +412,8 @@ class App:
 
         self.status.set("START YOUR INNER TUNE WITH")
         self.title.set(self.last_active_entry[0][2])  # Set the title to the first song's title as set before
+        self.now_title.set(self.last_active_entry[0][2])
+        self.now_artists.set(__first_artists)
 
         # Shortcut key bindings after loading the songs
         bindings = {
@@ -559,6 +570,8 @@ class App:
             else:
                 # If a song is playing or pausing
                 if self.is_playing:
+                    if self.now_playing:
+                        self.now_status.pack(anchor='w')
                     # When a song is now playing or resuming
                     if self.audio.currently_playing():
                         _cur_pos = self.audio.current_position() / 1000
@@ -612,6 +625,8 @@ class App:
                     self.elapsed.set("00:00:00")
                     self.position.set(0.0)
                     self.tgl_play.configure(text="\ue102")
+                    if self.now_playing:
+                        self.now_status.pack_forget()
 
             sleep(0.5)
 
@@ -624,9 +639,13 @@ class App:
             self.prev_status, self.prev_title = self.status.get(), self.title.get()
             self.status.set(temp_status)
             self.title.set(temp_title)
+            if self.now_playing:
+                self.now_info.pack(anchor='w')
         else:
             self.status.set(self.prev_status)
             self.title.set(self.prev_title)
+            if self.now_playing:
+                self.now_info.pack_forget()
 
     def _control_actions(self, button: Label, action: str):
         match action:
@@ -1065,6 +1084,44 @@ class App:
         else:
             __close_mini_player()
 
+    def _now_playing_screen(self):
+        if not self.now_playing:
+            self.now_playing = True
+            for frm in self.main_bg.winfo_children():
+                frm.pack_forget()
+        else:
+            self.now_playing = False
+            for item in self.main_bg.winfo_children():
+                item.pack_forget()
+            self.header_bg.pack(side='top', fill='x')
+            self.body_bg.pack(side='top', fill='both', expand=True)
+            return None
+
+        self.main_bg.configure(bg=self.color.now_playing_back)
+        status_frame = Frame(self.main_bg, bg=self.color.now_playing_back)
+        status_frame.pack(side='top', padx=30, pady=20, anchor='w')
+        self.now_status = Label(status_frame, textvariable=self.status, font=self.font.now_playing_status,
+                                fg=self.color.now_playing_status, bg=self.color.now_playing_back)
+        self.now_info = Label(status_frame, textvariable=self.title, font=self.font.now_playing_info,
+                              fg=self.color.now_playing_info, bg=self.color.now_playing_back)
+
+        Label(self.main_bg, textvariable=self.now_artists, fg=self.color.now_playing_subtitle,
+              font=self.font.now_playing_subtitle, bg=self.color.now_playing_back).pack(side='bottom', pady=(0, 20))
+        Label(self.main_bg, textvariable=self.now_title, fg=self.color.now_playing_title, font=self.font.now_playing_title,
+              bg=self.color.now_playing_back).pack(side='bottom', pady=(20, 0))
+        Canvas(self.main_bg, bg='#f0576a', border=0, highlightthickness=0, height=1).pack(side='bottom', fill='x', padx=200)
+        btn_frame = Frame(self.main_bg, bg=self.color.now_playing_back)
+        btn_frame.pack(side='bottom', pady=5)
+        prv = Label(btn_frame, text='\ue100', fg=self.color.now_playing_btnS, bg=self.color.now_playing_back, font=self.font.iconS)
+        prv.pack(side='left')
+        prv.bind('<Button-1>', lambda e=None: self._previous())
+        ply = Label(btn_frame, textvariable=self.play_pause, fg=self.color.now_playing_btnP, bg=self.color.now_playing_back, font=self.font.iconL)
+        ply.pack(side='left', padx=20)
+        ply.bind('<Button-1>', lambda e=None: self._play())
+        nxt = Label(btn_frame, text='\ue101', fg=self.color.now_playing_btnS, bg=self.color.now_playing_back, font=self.font.iconS)
+        nxt.pack(side='left')
+        nxt.bind('<Button-1>', lambda e=None: self._next())
+
     def _change_opacity(self, tk_window: Tk | Toplevel, increment: True):
         opacity = self.mini_player_opacity
         opacity = opacity + 0.2 if increment else opacity - 0.2
@@ -1077,6 +1134,8 @@ class App:
         self.mini_player_opacity = opacity
 
     def _set_mini_player_string(self, title: str, artists: str):
+        self.now_title.set(title)
+        self.now_artists.set(artists)
         len_ttl = 20
         len_art = 40
         if len(title) > len_ttl:

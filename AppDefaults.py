@@ -44,6 +44,14 @@ class ColorDefaults:
                 self.popup_option_hover = "#c8c8c8"
                 self.popup_option_select = self.main_back
 
+                self.now_playing_back = self.ascent
+                self.now_playing_title = "#f8f8f8"
+                self.now_playing_subtitle = "#d4d4d4"
+                self.now_playing_btnP = "#d4d4d4"
+                self.now_playing_btnS = "#c7c7c7"
+                self.now_playing_status = "#f48a98"
+                self.now_playing_info = "#d9132c"
+
 
 class FontDefaults:
 
@@ -62,3 +70,7 @@ class FontDefaults:
         self.popup_title = ('Roboto Condensed Bold', 11)
         self.popup_head = ('Roboto Condensed Light', 16)
         self.popup_option = ('Roboto Condensed', 12)
+        self.now_playing_title = ('Roboto Condensed Light', 18)
+        self.now_playing_subtitle = ('Roboto Condensed Light Italic', 10)
+        self.now_playing_status = ('Roboto Condensed Bold', 11)
+        self.now_playing_info = ('Roboto Condensed', 13)
