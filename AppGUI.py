@@ -1,4 +1,5 @@
 # import tkinter
+from os import listdir, remove
 from tkinter import (
     Tk, Toplevel,
     Frame, Canvas, Label, Scale, Radiobutton, Entry,
@@ -58,6 +59,7 @@ class App:
         self.is_timer: [bool, int] or [bool, int, int] = [False, 0]
         self.total_songs: int = 0
         self.current_song_index: int | None = None
+        self.current_cover: str | None = None
         self.all_control_buttons: [Label] = []
         # Stores the list of thumbnails and headings of all the entries in respect of their IDs (song ID)
         self.all_entries: {int: (Label, Label)} = {}  # [{id1: (thumb1, title1)}, {id2: (thumb2, title2)}, ...]
@@ -387,7 +389,7 @@ class App:
             self.all_entries[song['id']] = (thumb, heading)
             # First entry added to the last_active_entry for thumb and heading change on hitting controller play button
             if i == 0:
-                self.last_active_entry = [(thumb, heading, song['title'])]
+                self.last_active_entry = [(thumb, heading, song['title'], song['cover'])]
                 self._set_mini_player_string(title=song['title'], artists=song['artists'])
 
         # Player control buttons activate after loading the songs
@@ -502,6 +504,7 @@ class App:
                 self.backend.set_played_song_history(song_title=self.backend.current_songs[0]['title'])
                 if self.current_song_index is None:
                     self.current_song_index = 0
+                    self.current_cover = self.last_active_entry[3]
             elif self.is_paused:
                 self.play_pause.set("\ue103")
                 self.audio.play_pause(play_state="RESUME")
@@ -524,7 +527,7 @@ class App:
             element['hd'].configure(fg=self.color.ascent)
             # Update both active_entry and last_active_entry with the currently playing song
             self.active_entry = [(element['th'], element['hd'])]
-            self.last_active_entry = [(element['th'], element['hd'], song['title'])]
+            self.last_active_entry = [(element['th'], element['hd'], song['title'], song['cover'])]
             # Adds the currently selected song to the played song history list in the backend
             self.backend.set_played_song_history(song_title=song['title'])
             self._set_mini_player_string(title=song['title'], artists=song['artists'])
@@ -989,6 +992,12 @@ class App:
         self.app_terminate = True
         self.audio.unload()
         self.main_window.destroy()
+        print(self.backend.current_songs)
+        try:
+            for cover in listdir(self.backend.default_coverart_folder):
+                remove(f"{self.backend.default_coverart_folder}/{cover}")
+        except:
+            pass
 
     # Mini-PLayer
     def _mini_player(self):
