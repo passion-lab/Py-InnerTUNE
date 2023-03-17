@@ -44,13 +44,13 @@ class ColorDefaults:
                 self.popup_option_hover = "#c8c8c8"
                 self.popup_option_select = self.main_back
 
-                self.now_playing_back = self.ascent
+                self.now_playing_back = self.ascent  # endangered
                 self.now_playing_title = "#f8f8f8"
                 self.now_playing_subtitle = "#d4d4d4"
-                self.now_playing_btnP = "#d4d4d4"
-                self.now_playing_btnS = "#c7c7c7"
+                self.now_playing_btnP = "#ffffff"
+                self.now_playing_btnS = "#C2C2C2"
                 self.now_playing_status = "#f48a98"
-                self.now_playing_info = "#d9132c"
+                self.now_playing_info = "#000000"
 
 
 class FontDefaults:
