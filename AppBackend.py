@@ -32,7 +32,8 @@ class Filesystem:
         self.original_order: list = []  # Same list as above for backup/reset after toggling off the shuffle mode
         self.played_songs_history: list = []
         self.default_coverart_folder = getenv('LOCALAPPDATA') + '/InnerTUNE/Cover Art'
-        self.random_covers = listdir("./Assets/images/Random cover/")
+        self.random_covers_path = "./Assets/images/Random cover/"
+        self.random_covers = listdir(self.random_covers_path)
 
     def get_default(self):
         return self.default_folder
@@ -107,10 +108,9 @@ class Filesystem:
             ttl = file.rsplit("/", 1)[1].rstrip(".mp3").rstrip(".wav")
             title = ttl[:125] + " ..." if len(file) > 125 else ttl
             duration = artists = album = year = "Unknown"
-            cover = None
+            cover = f"{self.default_coverart_folder}/{song_id}.jpg"
             try:
                 tag = ID3(file)
-                cover = f"{self.default_coverart_folder}/{song_id}.jpg"
                 try:
                     if not exists(self.default_coverart_folder):
                         mkdir(self.default_coverart_folder)
@@ -118,7 +118,7 @@ class Filesystem:
                     with open(cover, 'wb') as fl:
                         fl.write(cover_data)
                 except:
-                    pass
+                    cover = None
                 ti, ar, al, ye = tag.get('TIT2').text[0], tag.get('TPE1').text[0], tag.get('TALB').text[0], tag.get('TDRC').text[0]
                 if ti:
                     title = ti
