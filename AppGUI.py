@@ -423,9 +423,10 @@ class App:
             btn.bind('<Button-1>', lambda e=None, b=btn, a=act: self._control_actions(button=b, action=a))
 
         self.status.set("START YOUR INNER TUNE WITH")
-        self.title.set(self.last_active_entry[0][2])  # Set the title to the first song's title as set before
-        self.now_title.set(self.last_active_entry[0][2])
-        self.now_artists.set(__first_artists)
+        # self.title.set(self.last_active_entry[0][2])  # Set the title to the first song's title as set before
+        # self.now_title.set(self.last_active_entry[0][2])
+        # self.now_artists.set(__first_artists)
+        self._set_player_strings(self.last_active_entry[0][2], __first_artists)
 
         # Shortcut key bindings after loading the songs
         bindings = {
@@ -527,10 +528,10 @@ class App:
                 self.backend.set_played_song_history(song_title=self.backend.current_songs[0]['title'])
                 if self.current_song_index is None:
                     self.current_song_index = 0
-
                 self.current_cover = self.last_active_entry[0][3]
                 self._get_coverart('full')
                 if self.now_playing_screen:
+                    self.main_bg.itemconfigure(self.now_play_tag, text=self.play_pause.get())
                     self.main_bg.itemconfigure(self.now_title_tag, text=self.now_title.get())
                     self.main_bg.itemconfigure(self.now_artists_tag, text=self.now_artists.get())
                     self.main_bg.itemconfigure(self.now_background_tag, image=self.images['now_cover'])
@@ -554,10 +555,8 @@ class App:
             self.audio.load(song['path'])
             self.play_trigger = True
             self.play_pause.set("\ue103")
-            if self.now_playing_screen:
-                self.main_bg.itemconfigure(self.now_play_tag, text=self.play_pause.get())
             self.status.set("NOW PLAYING")
-            self.title.set(song['title'])
+            # self.title.set(song['title'])
             # Change the thumb and the heading of the currently playing song's entry
             element['th'].configure(image=self.images['thumb_active'])
             element['hd'].configure(fg=self.color.ascent)
@@ -572,6 +571,7 @@ class App:
             self.current_cover = song['cover']
             self._get_coverart('full')
             if self.now_playing_screen:
+                self.main_bg.itemconfigure(self.now_play_tag, text=self.play_pause.get())
                 self.main_bg.itemconfigure(self.now_title_tag, text=self.now_title.get())
                 self.main_bg.itemconfigure(self.now_artists_tag, text=self.now_artists.get())
                 self.main_bg.itemconfigure(self.now_background_tag, image=self.images['now_cover'])
@@ -1179,20 +1179,31 @@ class App:
         tk_window.attributes('-alpha', opacity)
         self.mini_player_opacity = opacity
 
-    def _set_player_strings(self, title: str, artists: str):
-        self.now_title.set(title)
-        self.now_artists.set(artists)
-        len_ttl = 20
-        len_art = 40
-        if len(title) > len_ttl:
-            self.mini_title.set(title[:len_ttl] + " ...")
-        else:
-            self.mini_title.set(title)
+    def _set_player_strings(self, title: str, artists: str | None = None):
+        len_main_ttl, len_now_ttl = 35, 80
+        len_mini_ttl, len_mini_art = 20, 40
 
-        if len(artists) > len_art:
-            self.mini_artists.set(artists[:len_art] + " ...")
+        if len(title) > len_main_ttl:
+            self.title.set(title[:len_main_ttl] + " ...")
         else:
-            self.mini_artists.set(artists)
+            self.title.set(title)
+
+        # If both title and artists are provided then change the following
+        if artists:
+            if len(title) > len_now_ttl:
+                self.now_title.set(title[:len_now_ttl] + " ...")
+            else:
+                self.now_title.set(title)
+            self.now_artists.set(artists)
+            if len(title) > len_mini_ttl:
+                self.mini_title.set(title[:len_mini_ttl] + " ...")
+            else:
+                self.mini_title.set(title)
+
+            if len(artists) > len_mini_art:
+                self.mini_artists.set(artists[:len_mini_art] + " ...")
+            else:
+                self.mini_artists.set(artists)
 
     def _get_coverart(self, for_which: Literal["thumb", "full"]):
         if self.current_cover:

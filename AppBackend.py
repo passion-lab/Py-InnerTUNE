@@ -105,8 +105,8 @@ class Filesystem:
         for file in self.current_files:
             song_id = randint(10000, 99999)
 
-            ttl = file.rsplit("/", 1)[1].rstrip(".mp3").rstrip(".wav")
-            title = ttl[:125] + " ..." if len(file) > 125 else ttl
+            title = file.rsplit("/", 1)[1].rstrip(".mp3").rstrip(".wav")
+            # title = ttl[:125] + " ..." if len(file) > 125 else ttl
             duration = artists = album = year = "Unknown"
             cover = f"{self.default_coverart_folder}/{song_id}.jpg"
             try:
