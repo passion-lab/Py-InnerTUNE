@@ -602,8 +602,6 @@ class App:
             else:
                 # If a song is playing or pausing
                 if self.is_playing:
-                    # if self.now_playing_screen:
-                    #     self.now_status_tag.pack(anchor='w')
                     # When a song is now playing or resuming
                     if self.audio.currently_playing():
                         _cur_pos = self.audio.current_position() / 1000
@@ -657,8 +655,6 @@ class App:
                     self.elapsed.set("00:00:00")
                     self.position.set(0.0)
                     self.tgl_play.configure(text="\ue102")
-                    # if self.now_playing_screen:
-                    #     self.now_status_tag.pack_forget()
 
             sleep(0.5)
 
