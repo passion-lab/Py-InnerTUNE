@@ -1163,7 +1163,8 @@ class App:
             self.main_bg.tag_bind(btn, '<Enter>', lambda e=None, b=btn: self.main_bg.itemconfigure(b, fill=self.color.now_playing_btnP))
             self.main_bg.tag_bind(btn, '<Leave>', lambda e=None, b=btn: self.main_bg.itemconfigure(b, fill=self.color.now_playing_btnS))
         self.main_bg.tag_bind(prv, '<Button-1>', lambda e=None: self._previous())
-        self.main_bg.tag_bind(self.now_play_tag, '<Button-1>', lambda e=None: self._play())
+        self.main_bg.tag_bind(self.now_play_tag, '<Button-1>',
+                              lambda e=None: self._play() if self.total_songs else self._open_file())
         self.main_bg.tag_bind(nxt, '<Button-1>', lambda e=None: self._next())
         for btn in [prv, self.now_play_tag, nxt]:
             self.main_bg.tag_bind(btn, '<Enter>', lambda e=None, b=btn: self.main_bg.itemconfigure(b, fill=self.color.now_playing_btnS))
