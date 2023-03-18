@@ -74,8 +74,8 @@ class App:
         self.play_pause = StringVar(value="\ue102")  # \ue102 = play; \ue103 = pause
         self.status = StringVar(value="UPLOAD FILE(S)/FOLDER")
         self.title = StringVar(value="Play your favorite tune ...")
-        self.song_title = StringVar(value="Play your favorite tune ...")
-        self.song_artists = StringVar(value="only with InnerTune")
+        self.mini_title = StringVar(value="Play your favorite tune ...")
+        self.mini_artists = StringVar(value="only with InnerTune")
         self.now_title = StringVar(value="Play your favorite tune ...")
         self.now_artists = StringVar(value="only with InnerTune")
         self.prev_status, self.prev_title = "", ""  # Stores previous status and title before changing
@@ -410,7 +410,7 @@ class App:
             # First entry added to the last_active_entry for thumb and heading change on hitting controller play button
             if i == 0:
                 self.last_active_entry = [(thumb, heading, song['title'], song['cover'])]
-                self._set_mini_player_string(title=song['title'], artists=song['artists'])
+                self._set_player_strings(title=song['title'], artists=song['artists'])
                 __first_artists = song['artists']
 
         # Player control buttons activate after loading the songs
@@ -566,7 +566,7 @@ class App:
             self.last_active_entry = [(element['th'], element['hd'], song['title'], song['cover'])]
             # Adds the currently selected song to the played song history list in the backend
             self.backend.set_played_song_history(song_title=song['title'])
-            self._set_mini_player_string(title=song['title'], artists=song['artists'])
+            self._set_player_strings(title=song['title'], artists=song['artists'])
             # Getting the current song index from the backend
             self.current_song_index = self.backend.current_songs.index(song)
             self.current_cover = song['cover']
@@ -1074,8 +1074,8 @@ class App:
             play.bind('<Button-1>', lambda e=None: self._play() if self.total_songs != 0 else self._open_file())
 
             # Title
-            Label(window, textvariable=self.song_title, font=self.font.title, fg=self.color.head_title, bg="white").place(x=10, y=7)
-            Label(window, textvariable=self.song_artists, font=self.font.subtitle, fg=self.color.head_subtitle, bg="white").place(x=10, y=36)
+            Label(window, textvariable=self.mini_title, font=self.font.title, fg=self.color.head_title, bg="white").place(x=10, y=7)
+            Label(window, textvariable=self.mini_artists, font=self.font.subtitle, fg=self.color.head_subtitle, bg="white").place(x=10, y=36)
 
             frm = Frame(window, bg="white")
             frm.place(x=203, y=37)
@@ -1179,20 +1179,20 @@ class App:
         tk_window.attributes('-alpha', opacity)
         self.mini_player_opacity = opacity
 
-    def _set_mini_player_string(self, title: str, artists: str):
+    def _set_player_strings(self, title: str, artists: str):
         self.now_title.set(title)
         self.now_artists.set(artists)
         len_ttl = 20
         len_art = 40
         if len(title) > len_ttl:
-            self.song_title.set(title[:len_ttl] + " ...")
+            self.mini_title.set(title[:len_ttl] + " ...")
         else:
-            self.song_title.set(title)
+            self.mini_title.set(title)
 
         if len(artists) > len_art:
-            self.song_artists.set(artists[:len_art] + " ...")
+            self.mini_artists.set(artists[:len_art] + " ...")
         else:
-            self.song_artists.set(artists)
+            self.mini_artists.set(artists)
 
     def _get_coverart(self, for_which: Literal["thumb", "full"]):
         if self.current_cover:
