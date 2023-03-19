@@ -1,4 +1,7 @@
 # import tkinter
+from os import listdir, remove
+from os.path import exists
+from random import choice
 from tkinter import (
     Tk, Toplevel,
     Frame, Canvas, Label, Scale, Radiobutton, Entry,
@@ -9,7 +12,7 @@ from tkinter.ttk import Sizegrip
 # from tkinter.font import Font
 # from os import listdir, curdir, chdir
 # from os.path import isfile, isdir
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageFilter, ImageEnhance
 # from io import BytesIO
 # from base64 import b64decode
 # from mutagen.mp3 import MP3
@@ -36,13 +39,19 @@ class App:
         self.app_name = "InnerTUNE"
         self.last_X = 0
         self.last_Y = 0
+        self.volume_step: float = 0.2
+        self.mini_player_opacity: float = 1.0
         self.app_terminate: bool = False
 
         self.images = {}
         self.menu_dropdown: bool = False
         self.timer_popup: bool = False
+# <<<<<<< HEAD
         self.confirmation_popup: bool = False
         self.meta_editor_popup: bool = False
+# =======
+        self.now_playing_screen: bool = False
+# >>>>>>> central
         self.play_trigger: bool = False
         self.mini_player: bool = False
         self.is_playing: bool = False
@@ -58,6 +67,7 @@ class App:
         self.is_timer: [bool, int] or [bool, int, int] = [False, 0]
         self.total_songs: int = 0
         self.current_song_index: int | None = None
+        self.current_cover: str | None = None
         self.all_control_buttons: [Label] = []
         # Stores the list of thumbnails and headings of all the entries in respect of their IDs (song ID)
         self.all_entries: {int: (Label, Label)} = {}  # [{id1: (thumb1, title1)}, {id2: (thumb2, title2)}, ...]
@@ -69,8 +79,10 @@ class App:
         self.play_pause = StringVar(value="\ue102")  # \ue102 = play; \ue103 = pause
         self.status = StringVar(value="UPLOAD FILE(S)/FOLDER")
         self.title = StringVar(value="Play your favorite tune ...")
-        self.song_title = StringVar(value="Play your favorite tune ...")
-        self.song_artists = StringVar(value="only with InnerTune")
+        self.mini_title = StringVar(value="Play your favorite tune ...")
+        self.mini_artists = StringVar(value="only with InnerTune")
+        self.now_title = StringVar(value="Play your favorite tune ...")
+        self.now_artists = StringVar(value="only with InnerTune")
         self.prev_status, self.prev_title = "", ""  # Stores previous status and title before changing
         self.volume = DoubleVar(value=self.default_volume)
         self.position = DoubleVar(value=0)
@@ -93,10 +105,19 @@ class App:
         self.tgl_full: Label = ...
         self.tgl_active_heading: Label = ...
         self.seek_bar: Scale = ...
+        self.now_background: Label = ...
+        self.now_background_tag: int = ...
+        self.now_foreground_tag: int = ...
+        self.now_status_tag: int = ...
+        self.now_info_tag: int = ...
+        self.now_title_tag: int = ...
+        self.now_artists_tag: int = ...
+        self.now_play_tag: int = ...
         self.make_playing_controller()
         self.mini_player_ctrl_frm = []
         self.thread_event = Event()
 
+        self._get_coverart('full')
         self.bindings()
         Thread(target=self.progress, daemon=True).start()
 
@@ -125,13 +146,23 @@ class App:
         self.images["toggle_on"] = ImageTk.PhotoImage(Image.open(image_dir + 'toggle_on.png'))
         self.images["toggle_off"] = ImageTk.PhotoImage(Image.open(image_dir + 'toggle_off.png'))
         self.images["mini_player_back"] = ImageTk.PhotoImage(Image.open(image_dir + 'mini_player_back.png'))
+# <<<<<<< HEAD
         self.images["button_primary"] = ImageTk.PhotoImage(Image.open(image_dir + 'button_primary.png'))
         self.images["button_secondary"] = ImageTk.PhotoImage(Image.open(image_dir + 'button_secondary.png'))
         self.images["button_tertiary"] = ImageTk.PhotoImage(Image.open(image_dir + 'button_tertiary.png'))
+# =======
+        self.images["coverart_frame"] = ImageTk.PhotoImage(Image.open(image_dir + 'coverart_frame.png'))
+# >>>>>>> central
 
     def bindings(self):
         self.header_bg.bind('<Button-1>', self._save_last_click)
         self.header_bg.bind('<B1-Motion>', self._drag_window)
+# <<<<<<< HEAD
+# =======
+        self.main_window.bind('<f>', lambda e=None: self._now_playing_screen())
+        self.main_window.bind('<F5>', lambda e=None: self._now_playing_screen())
+        self.main_window.bind('<Escape>', lambda e=None: self.main_window.destroy())
+# >>>>>>> central
 
     def _save_last_click(self, click):
         self.last_X, self.last_Y = click.x, click.y
@@ -309,6 +340,8 @@ class App:
         self.tgl_mute.bind('<Leave>', lambda e=None: self.tgl_mute.configure(
             fg=self.color.control_fore) if self.tgl_mute not in self.active_controls else None)
         self.tgl_mute.bind('<Button-1>', lambda e=None: self._mute())
+        status.bind('<Button-1>', lambda e=None: self._now_playing_screen())
+        title.bind('<Button-1>', lambda e=None: self._now_playing_screen())
 
     def make_preload_bg(self):
         Label(self.body_bg, image=self.images['entry_banner'], bg=self.color.main_back).place(relx=0.5, rely=0.5,
@@ -333,6 +366,7 @@ class App:
         return entry_box
 
     def make_song_list(self, songs: list[dict]):
+        __first_artists = ""
         self.total_songs = len(songs)
 
         # commands = (
@@ -400,8 +434,9 @@ class App:
             self.all_entries[song['id']] = (thumb, heading)
             # First entry added to the last_active_entry for thumb and heading change on hitting controller play button
             if i == 0:
-                self.last_active_entry = [(thumb, heading, song['title'])]
-                self._set_mini_player_string(title=song['title'], artists=song['artists'])
+                self.last_active_entry = [(thumb, heading, song['title'], song['cover'])]
+                self._set_player_strings(title=song['title'], artists=song['artists'])
+                __first_artists = song['artists']
 
         # Player control buttons activate after loading the songs
         for act, btn in self.all_control_buttons:
@@ -413,7 +448,21 @@ class App:
             btn.bind('<Button-1>', lambda e=None, b=btn, a=act: self._control_actions(button=b, action=a))
 
         self.status.set("START YOUR INNER TUNE WITH")
-        self.title.set(self.last_active_entry[0][2])  # Set the title to the first song's title as set before
+        # self.title.set(self.last_active_entry[0][2])  # Set the title to the first song's title as set before
+        # self.now_title.set(self.last_active_entry[0][2])
+        # self.now_artists.set(__first_artists)
+        self._set_player_strings(self.last_active_entry[0][2], __first_artists)
+
+        # Shortcut key bindings after loading the songs
+        bindings = {
+            '<space>'     : lambda e=None: self._play() if self.total_songs != 0 else self._open_file(),
+            '<Left>'      : lambda e=None: self._previous(),
+            '<Right>'     : lambda e=None: self._next(),
+            '<Up>'        : lambda e=None: self._volume_step(True),
+            '<Down>'      : lambda e=None: self._volume_step(False),
+        }
+        for key_seq in bindings:
+            self.main_window.bind(key_seq, bindings[key_seq])
 
     def _set_control(self, widget: Label, will_set: bool = True):
         if will_set:
@@ -504,12 +553,24 @@ class App:
                 self.backend.set_played_song_history(song_title=self.backend.current_songs[0]['title'])
                 if self.current_song_index is None:
                     self.current_song_index = 0
+                self.current_cover = self.last_active_entry[0][3]
+                self._get_coverart('full')
+                if self.now_playing_screen:
+                    self.main_bg.itemconfigure(self.now_play_tag, text=self.play_pause.get())
+                    self.main_bg.itemconfigure(self.now_title_tag, text=self.now_title.get())
+                    self.main_bg.itemconfigure(self.now_artists_tag, text=self.now_artists.get())
+                    self.main_bg.itemconfigure(self.now_background_tag, image=self.images['now_cover'])
+                    self.main_bg.itemconfigure(self.now_foreground_tag, image=self.images['coverart'])
             elif self.is_paused:
                 self.play_pause.set("\ue103")
+                if self.now_playing_screen:
+                    self.main_bg.itemconfigure(self.now_play_tag, text=self.play_pause.get())
                 self.audio.play_pause(play_state="RESUME")
                 self.is_paused = False
             elif not self.is_paused:
                 self.play_pause.set("\ue102")
+                if self.now_playing_screen:
+                    self.main_bg.itemconfigure(self.now_play_tag, text=self.play_pause.get())
                 self.audio.play_pause(play_state="PAUSE")
                 self.is_paused = True
         # If forced to play individual file from song entries
@@ -520,18 +581,26 @@ class App:
             self.play_trigger = True
             self.play_pause.set("\ue103")
             self.status.set("NOW PLAYING")
-            self.title.set(song['title'])
+            # self.title.set(song['title'])
             # Change the thumb and the heading of the currently playing song's entry
             element['th'].configure(image=self.images['thumb_active'])
             element['hd'].configure(fg=self.color.ascent)
             # Update both active_entry and last_active_entry with the currently playing song
             self.active_entry = [(element['th'], element['hd'])]
-            self.last_active_entry = [(element['th'], element['hd'], song['title'])]
+            self.last_active_entry = [(element['th'], element['hd'], song['title'], song['cover'])]
             # Adds the currently selected song to the played song history list in the backend
             self.backend.set_played_song_history(song_title=song['title'])
-            self._set_mini_player_string(title=song['title'], artists=song['artists'])
+            self._set_player_strings(title=song['title'], artists=song['artists'])
             # Getting the current song index from the backend
             self.current_song_index = self.backend.current_songs.index(song)
+            self.current_cover = song['cover']
+            self._get_coverart('full')
+            if self.now_playing_screen:
+                self.main_bg.itemconfigure(self.now_play_tag, text=self.play_pause.get())
+                self.main_bg.itemconfigure(self.now_title_tag, text=self.now_title.get())
+                self.main_bg.itemconfigure(self.now_artists_tag, text=self.now_artists.get())
+                self.main_bg.itemconfigure(self.now_background_tag, image=self.images['now_cover'])
+                self.main_bg.itemconfigure(self.now_foreground_tag, image=self.images['coverart'])
 
     def progress(self):
         # Added 2 booleans to run status_change method for one time only within the conditioned time
@@ -633,9 +702,15 @@ class App:
             self.prev_status, self.prev_title = self.status.get(), self.title.get()
             self.status.set(temp_status)
             self.title.set(temp_title)
+            if self.now_playing_screen:
+                self.main_bg.itemconfigure(self.now_status_tag, text=self.status.get())
+                self.main_bg.itemconfigure(self.now_info_tag, text=self.title.get())
         else:
             self.status.set(self.prev_status)
             self.title.set(self.prev_title)
+            if self.now_playing_screen:
+                self.main_bg.itemconfigure(self.now_status_tag, text=self.status.get())
+                self.main_bg.itemconfigure(self.now_info_tag, text="")
 
     def _control_actions(self, button: Label, action: str):
         match action:
@@ -689,11 +764,14 @@ class App:
                         "entry_heading": self.all_entries[_id][1]}
 
     def _previous(self):
-        if self.current_song_index is None:
-            self.current_song_index = 0
-        required = self._load_next_prev('PREV')
-        self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
-                   hd=required['entry_heading'])
+        # If the songs are loaded, then the next button works
+        if self.total_songs != 0:
+            # Set the current song to the 1st and play the last song on pressing the previous button for the 1st time
+            if self.current_song_index is None:
+                self.current_song_index = 0
+            required = self._load_next_prev('PREV')
+            self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
+                       hd=required['entry_heading'])
 
     def _stop(self):
         # If a song is currently playing
@@ -719,11 +797,14 @@ class App:
                 self.play_pause.set("\ue102")
 
     def _next(self):
-        if self.current_song_index is None:
-            self.current_song_index = 0
-        required = self._load_next_prev('NEXT')
-        self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
-                   hd=required['entry_heading'])
+        # If the songs are loaded, then the next button works
+        if self.total_songs != 0:
+            # Set the current song to the 1st and play the 2nd song on pressing the next button for the first time
+            if self.current_song_index is None:
+                self.current_song_index = 0
+            required = self._load_next_prev('NEXT')
+            self._play(song_id=required['id'], force_play=True, th=required['entry_thumb'],
+                       hd=required['entry_heading'])
 
     def _repeat(self, element: Label):
         if self.is_repeat:
@@ -906,10 +987,10 @@ class App:
             self._set_control(self.tgl_full, will_set=True)
             self.is_full = True
         else:
-            if self.is_muted:
+            if self.is_muted and lvl > 0:
                 self._set_control(self.tgl_mute, will_set=False)
                 self.is_muted = False
-            if self.is_full:
+            if self.is_full and lvl < 1:
                 self._set_control(self.tgl_full, will_set=False)
                 self.is_full = False
 
@@ -928,6 +1009,16 @@ class App:
                 self._set_control(self.tgl_mute, will_set=False)
                 self.is_muted = False
             self.is_full = True
+
+    def _volume_step(self, increment: True):
+        lvl = self.volume.get()
+        lvl = lvl + self.volume_step if increment else lvl - self.volume_step
+        if lvl < 0:
+            lvl = 0
+        if lvl > 1:
+            lvl = 1
+        self.volume.set(lvl)
+        self._volume()
 
     # BACKEND function calls for Individual Entry Buttons
     def _favorite(self, song_detail: dict, icon_label):
@@ -1157,6 +1248,11 @@ class App:
         self.app_terminate = True
         self.audio.unload()
         self.main_window.destroy()
+        try:
+            for cover in listdir(self.backend.default_coverart_folder):
+                remove(f"{self.backend.default_coverart_folder}/{cover}")
+        except:
+            pass
 
     # Mini-PLayer
     def _mini_player(self):
@@ -1169,10 +1265,11 @@ class App:
         if not self.mini_player:
             self.mini_player = True
             self.mini_player_window = window = Toplevel()
-            self.mini_player_window.focus_force()
-            self.mini_player_window.overrideredirect(True)
-            self.mini_player_window.attributes('-topmost', True)
-            self.mini_player_window.attributes('-transparentcolor', "#000111")
+            window.focus_force()
+            window.overrideredirect(True)
+            window.attributes('-topmost', True)
+            window.attributes('-transparentcolor', "#000111")
+            window.attributes('-alpha', 1)
             self.main_window.withdraw()
 
             # Background image
@@ -1184,8 +1281,8 @@ class App:
             play.bind('<Button-1>', lambda e=None: self._play() if self.total_songs != 0 else self._open_file())
 
             # Title
-            Label(window, textvariable=self.song_title, font=self.font.title, fg=self.color.head_title, bg="white").place(x=10, y=7)
-            Label(window, textvariable=self.song_artists, font=self.font.subtitle, fg=self.color.head_subtitle, bg="white").place(x=10, y=36)
+            Label(window, textvariable=self.mini_title, font=self.font.title, fg=self.color.head_title, bg="white").place(x=10, y=7)
+            Label(window, textvariable=self.mini_artists, font=self.font.subtitle, fg=self.color.head_subtitle, bg="white").place(x=10, y=36)
 
             frm = Frame(window, bg="white")
             frm.place(x=203, y=37)
@@ -1196,30 +1293,150 @@ class App:
                 b.bind('<Enter>', lambda e=None, btn=b: btn.configure(fg=self.color.ascent))
                 b.bind('<Leave>', lambda e=None, btn=b: btn.configure(fg=self.color.control_fore))
                 b.bind('<Button-1>', lambda e=None, n=i: self._previous() if n == 0 else self._next())
+                # Increase and decrease volume on right-clicking next and previous button respectively
+                b.bind('<Button-3>', lambda e=None, n=i: self._volume_step(False) if n == 0 else self._volume_step(True))
 
             w, h = self.main_window.winfo_screenwidth(), self.main_window.winfo_screenheight()
             w1, h1 = self.images['mini_player_back'].width(), self.images['mini_player_back'].height()
-            self.mini_player_window.geometry(f"+{w - w1}+{h - h1 - 60}")
-            self.mini_player_window.bind('<Escape>', lambda e=None: __close_mini_player())
-            self.mini_player_window.bind('<Button-3>', lambda e=None: __close_mini_player())
-            self.mini_player_window.mainloop()
+            window.geometry(f"+{w - w1}+{h - h1 - 60}")
+
+            bindings = {
+                '<space>': lambda e=None: self._play() if self.total_songs != 0 else self._open_file(),
+                '<Left>': lambda e=None: self._previous(),
+                '<Right>': lambda e=None: self._next(),
+                '<Up>': lambda e=None: self._volume_step(True),
+                '<Down>': lambda e=None: self._volume_step(False),
+                '<Shift-Up>': lambda e=None: self._change_opacity(window, True),
+                '<Shift-Down>': lambda e=None: self._change_opacity(window, False),
+                '<Enter>': lambda e=None: window.attributes('-alpha', 1),
+                '<Leave>': lambda e=None: window.attributes('-alpha', self.mini_player_opacity),
+                '<Button-3>': lambda e=None: __close_mini_player(),
+                '<Escape>': lambda e=None: __close_mini_player()
+            }
+            for key_seq in bindings:
+                window.bind(key_seq, bindings[key_seq])
+
+            window.mainloop()
         else:
             __close_mini_player()
 
+    def _now_playing_screen(self):
+        if not self.now_playing_screen:
+            for frm in self.main_bg.winfo_children():
+                frm.pack_forget()
+        else:
+            self.main_bg.pack(fill='both', expand=True)
+            self.now_playing_screen = False
+            for item in self.main_bg.winfo_children():
+                item.pack_forget()
+            self.header_bg.pack(side='top', fill='x')
+            self.body_bg.pack(side='top', fill='both', expand=True)
+            return None
+
+        self.main_bg.configure(border=0, highlightthickness=1, highlightcolor=self.color.ascent, highlightbackground=self.color.ascent)
+        __x, __y = self.main_window.winfo_width() / 2, self.main_window.winfo_height() / 2
+        __x0, __y0 = self.main_window.winfo_width(), self.main_window.winfo_height()
+        self.now_background_tag = self.main_bg.create_image((__x, __y), image=self.images['now_cover'])
+        self.now_status_tag = self.main_bg.create_text((30, 20), text=self.status.get(), font=self.font.now_playing_status,
+                                                       fill=self.color.now_playing_status, anchor='nw')
+        self.now_info_tag = self.main_bg.create_text((30, 40), text="", font=self.font.now_playing_info,
+                                                     fill=self.color.now_playing_info, anchor='nw')
+        back = self.main_bg.create_text((__x0 - 30, 30), text="\ue126", font=self.font.iconM, fill=self.color.now_playing_btnS)
+        mini = self.main_bg.create_text((__x0 - 60, 30), text="\ue2b3", font=self.font.iconM, fill=self.color.now_playing_btnS)
+        self.now_artists_tag = self.main_bg.create_text((__x, __y0 - 35), text=self.now_artists.get(),
+                                                        font=self.font.now_playing_subtitle,
+                                                        fill=self.color.now_playing_subtitle, anchor='s')
+        self.now_title_tag = self.main_bg.create_text((__x, __y0 - 55), text=self.now_title.get(),
+                                                      font=self.font.now_playing_title,
+                                                      fill=self.color.now_playing_title, anchor='s')
+        self.main_bg.create_line((__x - 300, __y0 - 100, __x + 300, __y0 - 100), smooth=True, fill="#f0576a")
+        prv = self.main_bg.create_text((__x - 50, __y0 - 135), text="\ue100", fill=self.color.now_playing_btnP,
+                                       font=self.font.iconM)
+        self.now_play_tag = self.main_bg.create_text((__x, __y0 - 135), text=self.play_pause.get(),
+                                                     fill=self.color.now_playing_btnP, font=self.font.iconL)
+        nxt = self.main_bg.create_text((__x + 50, __y0 - 135), text="\ue101", fill=self.color.now_playing_btnP,
+                                       font=self.font.iconM)
+        self.main_bg.create_image((__x, __y - 20), anchor='center', image=self.images['coverart_frame'])
+        self.now_foreground_tag = self.main_bg.create_image((__x, __y - 20), anchor='center', image=self.images['coverart'])
+
+        # Bindings
+        self.main_bg.tag_bind(back, '<Button-1>', lambda e=None: self._now_playing_screen())
+        self.main_bg.tag_bind(mini, '<Button-1>', lambda e=None: self._mini_player())
+        for btn in [back, mini]:
+            self.main_bg.tag_bind(btn, '<Enter>', lambda e=None, b=btn: self.main_bg.itemconfigure(b, fill=self.color.now_playing_btnP))
+            self.main_bg.tag_bind(btn, '<Leave>', lambda e=None, b=btn: self.main_bg.itemconfigure(b, fill=self.color.now_playing_btnS))
+        self.main_bg.tag_bind(prv, '<Button-1>', lambda e=None: self._previous())
+        self.main_bg.tag_bind(self.now_play_tag, '<Button-1>',
+                              lambda e=None: self._play() if self.total_songs else self._open_file())
+        self.main_bg.tag_bind(nxt, '<Button-1>', lambda e=None: self._next())
+        for btn in [prv, self.now_play_tag, nxt]:
+            self.main_bg.tag_bind(btn, '<Enter>', lambda e=None, b=btn: self.main_bg.itemconfigure(b, fill=self.color.now_playing_btnS))
+            self.main_bg.tag_bind(btn, '<Leave>', lambda e=None, b=btn: self.main_bg.itemconfigure(b, fill=self.color.now_playing_btnP))
+
+        self.now_playing_screen = True
+
+    def _change_opacity(self, tk_window: Tk | Toplevel, increment: True):
+        opacity = self.mini_player_opacity
+        opacity = opacity + 0.2 if increment else opacity - 0.2
+        if opacity < 0.1:  # Minimum opacity is 10%
+            opacity = 0.1
+        if opacity > 1:
+            opacity = 1
+
+        tk_window.attributes('-alpha', opacity)
+        self.mini_player_opacity = opacity
+
+    def _set_player_strings(self, title: str, artists: str | None = None):
+        len_main_ttl, len_now_ttl = 35, 80
+        len_mini_ttl, len_mini_art = 20, 40
+
+        if len(title) > len_main_ttl:
+            self.title.set(title[:len_main_ttl] + " ...")
+        else:
+            self.title.set(title)
+
+        # If both title and artists are provided then change the following
+        if artists:
+            if len(title) > len_now_ttl:
+                self.now_title.set(title[:len_now_ttl] + " ...")
+            else:
+                self.now_title.set(title)
+            self.now_artists.set(artists)
+            if len(title) > len_mini_ttl:
+                self.mini_title.set(title[:len_mini_ttl] + " ...")
+            else:
+                self.mini_title.set(title)
+
+            if len(artists) > len_mini_art:
+                self.mini_artists.set(artists[:len_mini_art] + " ...")
+            else:
+                self.mini_artists.set(artists)
+
+    def _get_coverart(self, for_which: Literal["thumb", "full"]):
+        if self.current_cover:
+            img = self.current_cover
+        else:
+            # Selects a random image as a coverart for non-availability of it
+            img = f"{self.backend.random_covers_path}/{choice(self.backend.random_covers)}"
+
+        match for_which:
+            # For thumbnails of each song's entry
+            case 'thumb':
+                pass
+
+            # For now playing screen's full background and coverart image
+            case 'full':
+                with Image.open(img) as image:
+                    back_image = image.resize((self.main_window.winfo_width(), self.main_window.winfo_height()), 1)
+                    back_image = back_image.filter(ImageFilter.GaussianBlur(10))
+                    back_image = ImageEnhance.Brightness(back_image)
+                    back_image = back_image.enhance(0.8)
+                    cover_image = image.resize((200, 200), 1)
+
+                    self.images["now_cover"] = ImageTk.PhotoImage(back_image)
+                    self.images["coverart"] = ImageTk.PhotoImage(cover_image)
+
     # Custom functions
-    def _set_mini_player_string(self, title: str, artists: str):
-        len_ttl = 20
-        len_art = 40
-        if len(title) > len_ttl:
-            self.song_title.set(title[:len_ttl] + " ...")
-        else:
-            self.song_title.set(title)
-
-        if len(artists) > len_art:
-            self.song_artists.set(artists[:len_art] + " ...")
-        else:
-            self.song_artists.set(artists)
-
     @staticmethod
     def _get_hms(seconds: float):
         return strftime("%H:%M:%S", gmtime(seconds))

@@ -6,12 +6,18 @@ from builtins import callable
 from threading import Thread
 from time import sleep
 from tkinter.filedialog import askopenfilenames, askdirectory
-from random import randint, shuffle
+from random import randint, shuffle, choice
 
 from PIL import ImageTk, Image
+# <<<<<<< HEAD
 from mutagen.id3 import ID3, TIT2, TPE1, TALB, TDRC
 from os import curdir, listdir, getenv, PathLike, chdir, environ, remove
+# =======
+from mutagen.id3 import ID3
+from os import curdir, listdir, getenv, PathLike, chdir, environ, mkdir
+# >>>>>>> central
 from os.path import isdir, isfile, exists, join
+from shutil import copy
 
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 from pygame import mixer
@@ -26,12 +32,18 @@ class Filesystem:
         self.current_folder: PathLike | str = ""
         self.current_files: list | tuple = []
         self.current_songs: list = [
-            # {"id": "", "path": "", "title": "", "artists": "", "album": "", "release": ""},
+            # {"id": "", "path": "", "title": "", "artists": "", "album": "", "release": "", "cover": ""},
         ]
         self.original_order: list = []  # Same list as above for backup/reset after toggling off the shuffle mode
         self.played_songs_history: list = []
+# <<<<<<< HEAD
         self.favorite_songs: list = []
         self.liked_songs: list = []
+# =======
+        self.default_coverart_folder = getenv('LOCALAPPDATA') + '/InnerTUNE/Cover Art'
+        self.random_covers_path = "./Assets/images/Random cover/"
+        self.random_covers = listdir(self.random_covers_path)
+# >>>>>>> central
 
     def get_default(self):
         return self.default_folder
@@ -127,15 +139,22 @@ class Filesystem:
     def _extract_music_info(self):
         # chdir(self.current_folder)
         for file in self.current_files:
-            ttl = file.rsplit("/", 1)[1].rstrip(".mp3").rstrip(".wav")
-            title = ttl[:125] + " ..." if len(file) > 125 else ttl
+            song_id = randint(10000, 99999)
+
+            title = file.rsplit("/", 1)[1].rstrip(".mp3").rstrip(".wav")
+            # title = ttl[:125] + " ..." if len(file) > 125 else ttl
             duration = artists = album = year = "Unknown"
-            cover = ...
+            cover = f"{self.default_coverart_folder}/{song_id}.jpg"
             try:
                 tag = ID3(file)
-
-                # TODO: Cover art will have to be added
-                # co = ImageTk.PhotoImage(Image.open(BytesIO(tag.get("APIC:").data)).resize((32, 32), resample=0))
+                try:
+                    if not exists(self.default_coverart_folder):
+                        mkdir(self.default_coverart_folder)
+                    cover_data = tag.get("APIC:").data
+                    with open(cover, 'wb') as fl:
+                        fl.write(cover_data)
+                except:
+                    cover = None
                 ti, ar, al, ye = tag.get('TIT2').text[0], tag.get('TPE1').text[0], tag.get('TALB').text[0], tag.get('TDRC').text[0]
                 if ti:
                     title = ti
@@ -148,9 +167,10 @@ class Filesystem:
             except:
                 pass
             finally:
-                # {"id": "", "path": "", "title": "", "artists": "", "album": "", "release": ""},
+                # {"id": "", "path": "", "title": "", "artists": "", "album": "", "release": "", "cover": ""},
                 self.current_songs.append(
-                    {"id": randint(10000, 99999), "path": file, "title": title, "artists": artists, "album": album, "release": year}
+                    {"id": song_id, "path": file, "title": title, "artists": artists, "album": album, "release": year,
+                     "cover": cover}
                 )
                 self.original_order = self.current_songs.copy()
 
