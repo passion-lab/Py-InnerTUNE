@@ -48,7 +48,7 @@ class App:
         self.timer_popup: bool = False
 # <<<<<<< HEAD
         self.confirmation_popup: bool = False
-        self.add_to_playlist_popup: bool = False
+        self.add_playlist_popup: bool = False
         self.meta_editor_popup: bool = False
 # =======
         self.now_playing_screen: bool = False
@@ -97,7 +97,7 @@ class App:
         self.main_menu_window: Toplevel = ...
         self.menu_dropdown_window: Toplevel
         self.timer_popup_window: Toplevel = ...
-        self.add_to_playlist_window: Toplevel = ...
+        self.add_playlist_window: Toplevel = ...
         self.confirmation_popup_window: Toplevel = ...
         self.meta_editor_popup_window: Toplevel = ...
         self.mini_player_window: Toplevel = ...
@@ -1080,12 +1080,12 @@ class App:
                 btn_yes.bind('<Button-1>', lambda e=None: __proceed(True))
                 window.bind('<Return>', lambda e=None: __proceed(True))
 
-        if self.add_to_playlist_popup:
-            self.add_to_playlist_window.destroy()
-            self.add_to_playlist_popup = False
+        if self.add_playlist_popup:
+            self.add_playlist_window.destroy()
+            self.add_playlist_popup = False
 
-        window = self.add_to_playlist_window = Toplevel(self.main_window)
-        self.add_to_playlist_popup = True
+        window = self.add_playlist_window = Toplevel(self.main_window)
+        self.add_playlist_popup = True
         window.overrideredirect(True)
         window.attributes('-alpha', 0.8)
         window.attributes('-topmost', True)
