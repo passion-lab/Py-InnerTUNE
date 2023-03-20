@@ -740,7 +740,9 @@ class App:
             case "like":
                 self._like(song, song_widget.winfo_children()[0].winfo_children()[4])
             case "add_to_playlist":
-                self._add_playlist(song)
+                fav_widget = song_widget.winfo_children()[0].winfo_children()[5]
+                like_widget = song_widget.winfo_children()[0].winfo_children()[4]
+                self._add_playlist(song, fav_widget, like_widget)
             case "edit":
                 self._edit_meta(song)
 
@@ -1039,7 +1041,7 @@ class App:
             self.backend.remove_liked_song(song_detail)
             self._set_control(widget=icon_label, will_set=False)
 
-    def _add_playlist(self, song_detail: dict):
+    def _add_playlist(self, song_detail: dict, *fav_like_widget):
 
         def __proceed(ok: bool):
             if ok:
@@ -1047,8 +1049,15 @@ class App:
                     name = entered_value.get()
                 else:
                     name = [playlist for playlist in self.backend.song_playlist][selected_option.get() - 1]
+                    # If Favorite Songs playlist is selected
+                    if selected_option.get() == 1:
+                        self._set_control(widget=fav_like_widget[0], will_set=True)
+                    # If Liked Songs playlist is selected
+                    elif selected_option.get() == 2:
+                        self._set_control(widget=fav_like_widget[1], will_set=True)
                 self.backend.add_to_playlist(playlist_name=name, song=song_detail)
                 window.destroy()
+            # If cancel button is pressed
             else:
                 window.destroy()
 
