@@ -737,6 +737,8 @@ class App:
                 self._favorite(song, song_widget.winfo_children()[0].winfo_children()[5])
             case "like":
                 self._like(song, song_widget.winfo_children()[0].winfo_children()[4])
+            case "add_to_playlist":
+                self._add_playlist(song)
             case "edit":
                 self._edit_meta(song)
 
@@ -1035,8 +1037,109 @@ class App:
             self.backend.remove_liked_song(song_detail)
             self._set_control(widget=icon_label, will_set=False)
 
-    def _add_playlist(self):
-        pass
+    def _add_playlist(self, song_detail: dict):
+
+        def __proceed(ok: bool):
+            if ok:
+                if selected_option.get() == 123:
+                    name = entered_value.get()
+                else:
+                    name = [playlist for playlist in self.backend.song_playlist][selected_option.get() - 1]
+                self.backend.add_to_playlist(playlist_name=name, song=song_detail)
+
+                window.destroy()
+            else:
+                window.destroy()
+
+        def __input_validation(inp: str):
+            # inp = Default event argument (entry text in this case)
+            if inp == "" or inp.isspace():
+                btn_yes.configure(state='disabled', cursor='arrow')
+                btn_yes.bind('<Button-1>', lambda e=None: None)
+
+            if inp.strip():
+                btn_yes.configure(state='normal', cursor='hand2')
+                btn_yes.bind('<Button-1>', lambda e=None: __proceed(True))
+                return True
+            elif inp == "":
+                return True
+            else:
+                return False
+
+        def __on_select():
+            # If the New Playlist option is selected
+            if selected_option.get() == 123:
+                _input.configure(state='normal')
+                _input.focus_set()
+                _cnv.configure(bg=self.color.enabled)
+                btn_yes.configure(state='disabled', cursor='arrow')
+                btn_yes.bind('<Button-1>', lambda e=None: None)
+            else:
+                _input.configure(state='disabled')
+                _input.focus_get()
+                _cnv.configure(bg=self.color.disabled)
+                btn_yes.configure(state='normal', cursor='hand2')
+                btn_yes.bind('<Button-1>', lambda e=None: __proceed(True))
+
+        window = Toplevel(self.main_window)
+        window.overrideredirect(True)
+        window.attributes('-alpha', 0.8)
+        window.attributes('-topmost', True)
+
+        # Header and title bar
+        bg_frame = Frame(window, bg=self.color.popup_back)
+        bg_frame.pack(fill='both', expand=True)
+        _ttl = Label(bg_frame, text=f"{self.app_name} - Add to Playlist", font=self.font.popup_title,
+                     bg=self.color.ascent, fg=self.color.popup_title_fore, padx=30, pady=20)
+        _ttl.pack(side='top', fill='x')
+        # _ttl.bind('<Button-1>', lambda e=None: __close_timer_window())
+        # _ttl.bind('<Double-Button-1>', lambda e=None: __close_timer_window())
+        Label(bg_frame, text="Save to playlist:", font=self.font.popup_head, bg=self.color.popup_back,
+              fg=self.color.popup_head_fore, padx=30, pady=15, anchor='w').pack(fill='x', anchor='w')
+
+        # Radio buttons of existing playlists
+        options = [(playlist, index + 1) for index, playlist in enumerate(self.backend.song_playlist)]
+        options.append(("Add New Playlist", 123))  # Option text and value for the last one
+        selected_option = IntVar()  # Values are 1, 2, 3, ..., n, 123 [where, n = len(self.backend.song_playlist)]
+        entered_value = StringVar()
+        for option, value in options:
+            _rd = Radiobutton(bg_frame, text=option, font=self.font.popup_option,
+                              fg=self.color.popup_option_fore,
+                              border=0, image=self.images['radio_inactive'],
+                              selectimage=self.images['radio_active'],
+                              compound='left', indicatoron=False, bg=self.color.popup_back, value=value,
+                              variable=selected_option, pady=2, padx=15, anchor='w', command=__on_select)
+            _rd.pack(fill='x', anchor='w', padx=30)
+            _rd.bind('<Enter>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_option_hover,
+                                                                    image=self.images['radio_hover']))
+            _rd.bind('<Leave>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_back,
+                                                                    image=self.images['radio_inactive']))
+        _input = Entry(bg_frame, font=self.font.popup_option, fg=self.color.popup_option_fore,
+                       disabledbackground=self.color.popup_back, selectbackground=self.color.ascent,
+                       bg=self.color.popup_back, relief='solid', borderwidth=0, state='disabled',
+                       textvariable=entered_value, width=1)
+        _input.pack(padx=(40 + 45, 30), pady=(4, 0), anchor='w', fill='x')
+        _reg_val_func = window.register(__input_validation)
+        _input.configure(validate='key', validatecommand=(_reg_val_func, '%P'))
+        _cnv = Canvas(bg_frame, bg=self.color.disabled, height=1, width=100, borderwidth=0, highlightthickness=0)
+        _cnv.pack(padx=(40 + 45, 30), pady=(0, 30), anchor='w')
+
+        # Footer buttons
+        Canvas(bg_frame, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0).pack(fill='x')
+        btn_frame = Frame(bg_frame, bg=self.color.popup_back, padx=30, pady=15)
+        btn_frame.pack(side='bottom', fill='x')
+        btn_no = Label(btn_frame, text="CANCEL", image=self.images['button_secondary'], compound='center',
+                       bg=self.color.popup_back, fg=self.color.ascent, cursor='hand2')
+        btn_no.pack(side='right')
+        btn_no.bind('<Button-1>', lambda e=None: __proceed(False))
+        btn_yes = Label(btn_frame, text="A D D", image=self.images['button_primary'], compound='center',
+                        bg=self.color.popup_back, fg="white", state='disabled', cursor='arrow')
+        btn_yes.pack(side='right')
+
+        _w0, _h0, _x0, _y0 = self._get_dimension(self.main_window)
+        _w1, _h1, _, _ = self._get_dimension(window)
+        window.geometry(f'+{_x0 + _w0 // 2 - _w1 // 2}+{_y0 + _h0 // 2 - _h1 // 2}')
+        window.mainloop()
 
     def _play_next(self, song_dict: dict):
         # Make the selected song after the current song in the current_song dict
