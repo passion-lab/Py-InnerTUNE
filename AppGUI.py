@@ -931,8 +931,8 @@ class App:
             _input = Entry(bg_frame, font=self.font.popup_option, fg=self.color.popup_option_fore,
                            disabledbackground=self.color.popup_back,
                            bg=self.color.popup_back, relief='solid', borderwidth=0, state='disabled',
-                           textvariable=entered_value, width=3)
-            _input.pack(padx=(40 + 45, 30), pady=(4, 0), anchor='w', fill='x')
+                           textvariable=entered_value, width=12)
+            _input.pack(padx=(40 + 45, 30), pady=(4, 0), anchor='w')
             _reg_val_func = self.timer_popup_window.register(__input_validation)
             _input.configure(validate='key', validatecommand=(_reg_val_func, '%P'))
             _cnv = Canvas(bg_frame, bg=self.color.disabled, height=1, width=100, borderwidth=0, highlightthickness=0)
