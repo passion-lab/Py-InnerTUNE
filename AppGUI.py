@@ -1058,8 +1058,8 @@ class App:
                 btn_yes.bind('<Button-1>', lambda e=None: None)
 
             if inp.strip():
-                btn_yes.configure(cursor='arrow')
                 btn_yes.bind('<Button-1>', lambda e=None: __proceed(True))
+                _input.bind('<Return>', lambda e=None: __proceed(True))
                 return True
             elif inp == "":
                 return True
@@ -1072,13 +1072,13 @@ class App:
                 _input.configure(state='normal')
                 _input.focus_set()
                 _cnv.configure(bg=self.color.enabled)
-                btn_yes.pack_forget()
                 btn_yes.bind('<Button-1>', lambda e=None: None)
             else:
                 _input.configure(state='disabled')
                 _input.focus_get()
                 _cnv.configure(bg=self.color.disabled)
                 btn_yes.bind('<Button-1>', lambda e=None: __proceed(True))
+                window.bind('<Return>', lambda e=None: __proceed(True))
 
         if self.add_to_playlist_popup:
             self.add_to_playlist_window.destroy()
