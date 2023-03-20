@@ -1054,11 +1054,10 @@ class App:
         def __input_validation(inp: str):
             # inp = Default event argument (entry text in this case)
             if inp == "" or inp.isspace():
-                btn_yes.configure(state='disabled', cursor='arrow')
                 btn_yes.bind('<Button-1>', lambda e=None: None)
 
             if inp.strip():
-                btn_yes.configure(state='normal', cursor='hand2')
+                btn_yes.configure(cursor='arrow')
                 btn_yes.bind('<Button-1>', lambda e=None: __proceed(True))
                 return True
             elif inp == "":
@@ -1072,13 +1071,12 @@ class App:
                 _input.configure(state='normal')
                 _input.focus_set()
                 _cnv.configure(bg=self.color.enabled)
-                btn_yes.configure(state='disabled', cursor='arrow')
+                btn_yes.pack_forget()
                 btn_yes.bind('<Button-1>', lambda e=None: None)
             else:
                 _input.configure(state='disabled')
                 _input.focus_get()
                 _cnv.configure(bg=self.color.disabled)
-                btn_yes.configure(state='normal', cursor='hand2')
                 btn_yes.bind('<Button-1>', lambda e=None: __proceed(True))
 
         window = Toplevel(self.main_window)
@@ -1127,13 +1125,13 @@ class App:
         Canvas(bg_frame, bg=self.color.popup_line, height=1, borderwidth=0, highlightthickness=0).pack(fill='x')
         btn_frame = Frame(bg_frame, bg=self.color.popup_back, padx=30, pady=15)
         btn_frame.pack(side='bottom', fill='x')
+        btn_yes = Label(btn_frame, text="A D D", image=self.images['button_primary'], compound='center',
+                        bg=self.color.popup_back, fg="white")
+        btn_yes.pack(side='right')
         btn_no = Label(btn_frame, text="CANCEL", image=self.images['button_secondary'], compound='center',
-                       bg=self.color.popup_back, fg=self.color.ascent, cursor='hand2')
+                       bg=self.color.popup_back, fg=self.color.ascent)
         btn_no.pack(side='right')
         btn_no.bind('<Button-1>', lambda e=None: __proceed(False))
-        btn_yes = Label(btn_frame, text="A D D", image=self.images['button_primary'], compound='center',
-                        bg=self.color.popup_back, fg="white", state='disabled', cursor='arrow')
-        btn_yes.pack(side='right')
 
         _w0, _h0, _x0, _y0 = self._get_dimension(self.main_window)
         _w1, _h1, _, _ = self._get_dimension(window)
