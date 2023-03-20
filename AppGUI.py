@@ -1092,7 +1092,7 @@ class App:
         _ttl = Label(bg_frame, text=f"{self.app_name} - Add to Playlist", font=self.font.popup_title,
                      bg=self.color.ascent, fg=self.color.popup_title_fore, padx=30, pady=20)
         _ttl.pack(side='top', fill='x')
-        # _ttl.bind('<Button-1>', lambda e=None: __close_timer_window())
+        _ttl.bind('<Button-1>', lambda e=None: window.destroy())
         # _ttl.bind('<Double-Button-1>', lambda e=None: __close_timer_window())
         Label(bg_frame, text="Save to playlist:", font=self.font.popup_head, bg=self.color.popup_back,
               fg=self.color.popup_head_fore, padx=30, pady=15, anchor='w').pack(fill='x', anchor='w')
@@ -1139,6 +1139,7 @@ class App:
         _w0, _h0, _x0, _y0 = self._get_dimension(self.main_window)
         _w1, _h1, _, _ = self._get_dimension(window)
         window.geometry(f'+{_x0 + _w0 // 2 - _w1 // 2}+{_y0 + _h0 // 2 - _h1 // 2}')
+        window.bind('<Escape>', lambda e=None: window.destroy())
         window.mainloop()
 
     def _play_next(self, song_dict: dict):
