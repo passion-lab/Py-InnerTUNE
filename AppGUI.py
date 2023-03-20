@@ -161,7 +161,7 @@ class App:
 # =======
         self.main_window.bind('<f>', lambda e=None: self._now_playing_screen())
         self.main_window.bind('<F5>', lambda e=None: self._now_playing_screen())
-        self.main_window.bind('<Escape>', lambda e=None: self.main_window.destroy())
+        # self.main_window.bind('<Escape>', lambda e=None: self.main_window.destroy())
 # >>>>>>> central
 
     def _save_last_click(self, click):
@@ -1092,8 +1092,7 @@ class App:
         _ttl = Label(bg_frame, text=f"{self.app_name} - Add to Playlist", font=self.font.popup_title,
                      bg=self.color.ascent, fg=self.color.popup_title_fore, padx=30, pady=20)
         _ttl.pack(side='top', fill='x')
-        _ttl.bind('<Button-1>', lambda e=None: window.destroy())
-        # _ttl.bind('<Double-Button-1>', lambda e=None: __close_timer_window())
+        _ttl.bind('<Double-Button-1>', lambda e=None: window.destroy())
         Label(bg_frame, text="Save to playlist:", font=self.font.popup_head, bg=self.color.popup_back,
               fg=self.color.popup_head_fore, padx=30, pady=15, anchor='w').pack(fill='x', anchor='w')
 
