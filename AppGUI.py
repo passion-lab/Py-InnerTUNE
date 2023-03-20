@@ -854,6 +854,7 @@ class App:
                 _input.configure(state='disabled')
                 _input.focus_get()
                 _cnv.configure(bg=self.color.disabled)
+                self.timer_popup_window.bind('<Return>', lambda e=None: __switch_on())
 
         def __input_validation(inp: str):
             # inp = Default event argument (entry text in this case)
@@ -864,6 +865,7 @@ class App:
             if inp.isdigit():
                 _switch.configure(state='normal', cursor='hand2')
                 _switch.bind('<Button-1>', lambda e=None: __switch_on())
+                _input.bind('<Return>', lambda e=None: __switch_on())
                 return True
             elif inp == "":
                 return True
