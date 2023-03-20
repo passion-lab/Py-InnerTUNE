@@ -37,6 +37,10 @@ class Filesystem:
         self.original_order: list = []  # Same list as above for backup/reset after toggling off the shuffle mode
         self.played_songs_history: list = []
 # <<<<<<< HEAD
+        self.song_playlist: dict = {
+            "Favorite Songs": [],
+            "Liked Songs": [],
+        }
         self.favorite_songs: list = []
         self.liked_songs: list = []
 # =======
@@ -74,26 +78,40 @@ class Filesystem:
         self.played_songs_history.append(song_title)
 
     def set_favorite_songs(self, song: dict):
-        if song not in self.favorite_songs:
-            self.favorite_songs.append(song)
+        fav: list = self.song_playlist['Favorite Songs']
+        if song not in fav:
+            fav.append(song)
             return True
         else:
             return False
 
     def remove_favorite_song(self, song: dict):
+        fav: list = self.song_playlist['Favorite Songs']
         # Should be called when set_favorite_songs method returns False
-        self.favorite_songs.remove(song)
+        fav.remove(song)
 
     def set_liked_songs(self, song: dict):
-        if song not in self.liked_songs:
-            self.liked_songs.append(song)
+        liked: list = self.song_playlist['Liked Songs']
+        if song not in liked:
+            liked.append(song)
             return True
         else:
             return False
 
     def remove_liked_song(self, song: dict):
+        liked: list = self.song_playlist['Liked Songs']
         # Should be called when set_liked_songs method returns False
-        self.liked_songs.remove(song)
+        liked.remove(song)
+
+    def add_to_playlist(self, playlist_name: str, song: dict):
+        if playlist_name not in self.song_playlist:
+            self.song_playlist[playlist_name] = []
+
+        if song not in self.song_playlist[playlist_name]:
+            self.song_playlist[playlist_name].append(song)
+            return True
+        else:
+            return False
 
     def make_shuffle(self, mode: bool = True):
         if mode:
