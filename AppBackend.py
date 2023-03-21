@@ -41,8 +41,6 @@ class Filesystem:
             "Favorite Songs": [],
             "Liked Songs": [],
         }
-        self.favorite_songs: list = []
-        self.liked_songs: list = []
 # =======
         self.default_coverart_folder = getenv('LOCALAPPDATA') + '/InnerTUNE/Cover Art'
         self.random_covers_path = "./Assets/images/Random cover/"
