@@ -936,7 +936,7 @@ class App:
                 _rd.bind('<Leave>', lambda e=None, rd=_rd: rd.configure(bg=self.color.popup_back,
                                                                         image=self.images['radio_inactive']))
             _input = Entry(bg_frame, font=self.font.popup_option, fg=self.color.popup_option_fore,
-                           disabledbackground=self.color.popup_back,
+                           disabledbackground=self.color.popup_back, selectbackground=self.color.ascent,
                            bg=self.color.popup_back, relief='solid', borderwidth=0, state='disabled',
                            textvariable=entered_value, width=12)
             _input.pack(padx=(40 + 45, 30), pady=(4, 0), anchor='w')
