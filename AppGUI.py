@@ -399,7 +399,8 @@ class App:
 
             thumb = Label(frame, image=self.images['thumb'], bg=self.color.entry_back, anchor='w')
             thumb.pack(side='left', fill='both', anchor='w', padx=(0, 5))
-            heading = Label(frame, text=song['title'], font=self.font.heading, fg=self.color.entry_heading_fore,
+            ttl = song['title'][:100] + " ..." if len(song['title']) > 100 else song['title']
+            heading = Label(frame, text=ttl, font=self.font.heading, fg=self.color.entry_heading_fore,
                             bg=self.color.entry_back, anchor='w')
             heading.pack(side='top', anchor='w')
 
