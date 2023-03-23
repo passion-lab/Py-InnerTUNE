@@ -73,8 +73,9 @@ class App:
         # Stores the list of thumbnails and headings of all the entries in respect of their IDs (song ID)
         self.all_entries: {int: (Label, Label)} = {}  # [{id1: (thumb1, title1)}, {id2: (thumb2, title2)}, ...]
 
-        self.main_window = Tk()
-        self.set_title(self.app_name)
+        self.task_window = Tk()
+        self.main_window = Toplevel()
+        self.set_title("Happy Listening")
         self.configuration()
         self.load_files()
         self.play_pause = StringVar(value="\ue102")  # \ue102 = play; \ue103 = pause
@@ -120,13 +121,17 @@ class App:
         self.thread_event = Event()
 
         self._get_coverart('full')
+        self.taskbar_preview()
         self.bindings()
         Thread(target=self.progress, daemon=True).start()
 
     def run(self):
+        self.task_window.mainloop()
         self.main_window.mainloop()
 
     def configuration(self):
+        self.task_window.attributes('-alpha', 0.0)
+        # self.task_window.wm_iconbitmap("./Assets/images/InnerTUNE_Icon.ico")
         self.main_window.overrideredirect(True)
         self.main_window.resizable(True, True)
         w, h = 1076, 552
@@ -161,10 +166,21 @@ class App:
         self.header_bg.bind('<B1-Motion>', self._drag_window)
 # <<<<<<< HEAD
 # =======
+        self.task_window.bind('<Unmap>', lambda e=None: self._map_unmap_windows(state="UNMAP"))
+        self.task_window.bind('<Map>', lambda e=None: self._map_unmap_windows(state="MAP"))
         self.main_window.bind('<f>', lambda e=None: self._now_playing_screen())
         self.main_window.bind('<F5>', lambda e=None: self._now_playing_screen())
-        # self.main_window.bind('<Escape>', lambda e=None: self.main_window.destroy())
+        self.main_window.bind('<Alt-F4>', lambda e=None: self._close())
 # >>>>>>> central
+
+    def _map_unmap_windows(self, state: Literal["MAP", "UNMAP"]):
+        match state:
+            case "MAP":
+                self.main_window.deiconify()
+                self.task_window.deiconify()
+            case "UNMAP":
+                self.main_window.withdraw()
+                self.task_window.iconify()
 
     def _save_last_click(self, click):
         self.last_X, self.last_Y = click.x, click.y
@@ -189,7 +205,15 @@ class App:
                    self.main_window.winfo_x(), self.main_window.winfo_y()
 
     def set_title(self, text: str):
-        self.main_window.title(text)
+        self.task_window.title(f"{self.app_name} - {text}")
+
+    def taskbar_preview(self):
+        self.task_window.geometry("300x150")
+        cnv = Canvas(self.task_window, bd=0, highlightthickness=0)
+        cnv.pack(fill='both', expand=True)
+        # _x, _y = self.
+        img = self.images['entry_banner']
+        cnv.create_image((0, 0), image=img, anchor='nw')
 
     def make_main_background(self):
         main_bg = Canvas(self.main_window, bd=0, highlightthickness=0)
@@ -455,6 +479,7 @@ class App:
         # self.now_title.set(self.last_active_entry[0][2])
         # self.now_artists.set(__first_artists)
         self._set_player_strings(self.last_active_entry[0][2], __first_artists)
+        self.set_title("Play your inner tune")
 
         # Shortcut key bindings after loading the songs
         bindings = {
@@ -547,6 +572,7 @@ class App:
                     self._open_file()
                 self.play_pause.set("\ue103")
                 self.status.set("NOW PLAYING")
+                self.set_title(self.last_active_entry[0][2])
                 # Access the last_active_entry and change the thumb and heading style either hitting the controller
                 # play button first or hitting the play button after invoking the stop button
                 self.last_active_entry[0][0]['image'] = self.images['thumb_active']
@@ -584,6 +610,7 @@ class App:
             self.play_trigger = True
             self.play_pause.set("\ue103")
             self.status.set("NOW PLAYING")
+            self.set_title(song['title'])
             # self.title.set(song['title'])
             # Change the thumb and the heading of the currently playing song's entry
             element['th'].configure(image=self.images['thumb_active'])
@@ -1367,6 +1394,7 @@ class App:
         self.app_terminate = True
         self.audio.unload()
         self.main_window.destroy()
+        self.task_window.destroy()
         try:
             for cover in listdir(self.backend.default_coverart_folder):
                 remove(f"{self.backend.default_coverart_folder}/{cover}")
